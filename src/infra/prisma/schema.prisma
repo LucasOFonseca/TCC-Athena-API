@@ -1,0 +1,25 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Status {
+  active
+  inactive
+}
+
+model Discipline {
+  guid      String   @id @default(uuid())
+  name      String   @unique @db.VarChar(120)
+  syllabus  String   @db.VarChar(500)
+  workload  Int
+  status    Status   @default(active)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("disciplines")
+}
