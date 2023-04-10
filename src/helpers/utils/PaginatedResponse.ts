@@ -19,7 +19,11 @@ export class PaginatedResponse<T> {
       throw new AppError('O tamanho da página deve ser um número');
     }
 
-    if (typeof req.query.query === 'string' && req.query.query.length < 3) {
+    if (
+      req.query.query &&
+      typeof req.query.query === 'string' &&
+      req.query.query.length < 3
+    ) {
       throw new AppError(
         'O termo de busca deve conter pelo menos 3 caracteres'
       );
