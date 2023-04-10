@@ -54,12 +54,14 @@ export class DisciplineRepository implements IRepository {
 
       discipline.validate();
 
-      const existingDiscipline = await prismaClient.discipline.findUnique({
-        where: { name: discipline.name },
-      });
+      if (discipline.name !== disciplineToUpdate.name) {
+        const existingDiscipline = await prismaClient.discipline.findUnique({
+          where: { name: discipline.name },
+        });
 
-      if (existingDiscipline) {
-        throw new AppError(ErrorMessages.alreadyExists);
+        if (existingDiscipline) {
+          throw new AppError(ErrorMessages.alreadyExists);
+        }
       }
 
       const updatedDiscipline = await prismaClient.discipline.update({
@@ -105,6 +107,7 @@ export class DisciplineRepository implements IRepository {
 
     const data = await prismaClient.discipline.findMany({
       where,
+      orderBy: { createdAt: 'asc' },
       skip: args?.skip,
       take: args?.take,
     });
