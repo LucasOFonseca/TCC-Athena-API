@@ -15,40 +15,40 @@ export class Discipline {
     return this._name;
   }
 
-  get syllabus() {
-    return this._syllabus;
-  }
-
-  get workload() {
-    return this._workload;
-  }
-
-  get guid() {
-    return this._guid;
-  }
-
-  get status() {
-    return this._status;
-  }
-
-  set guid(guid: string) {
-    this._guid = guid;
-  }
-
-  set status(status: GenericStatus) {
-    this._status = status;
-  }
-
   set name(name: string) {
     this._name = name;
+  }
+
+  get syllabus() {
+    return this._syllabus;
   }
 
   set syllabus(syllabus: string) {
     this._syllabus = syllabus;
   }
 
+  get workload() {
+    return this._workload;
+  }
+
   set workload(workload: number) {
     this._workload = workload;
+  }
+
+  get guid() {
+    return this._guid;
+  }
+
+  set guid(guid: string) {
+    this._guid = guid;
+  }
+
+  get status() {
+    return this._status;
+  }
+
+  set status(status: GenericStatus) {
+    this._status = status;
   }
 
   toJSON() {
