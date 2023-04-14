@@ -3,7 +3,7 @@ import 'dotenv/config';
 import express, { Request, Response } from 'express';
 import 'express-async-errors';
 import { AppError } from './errors';
-import { router } from './routers';
+import { router } from './routes';
 
 const app = express();
 
