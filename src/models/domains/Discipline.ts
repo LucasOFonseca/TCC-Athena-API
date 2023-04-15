@@ -66,23 +66,22 @@ export class Discipline {
       .object({
         guid: z.string().uuid('Guid inválido'),
         status: z.enum([GenericStatus.active, GenericStatus.inactive], {
-          errorMap: () =>
-            new AppError(`'${this._status}' não é um status válido`),
+          errorMap: () => new AppError(ErrorMessages.MSGE06),
         }),
         name: z
-          .string({ required_error: ErrorMessages.requiredFields })
-          .min(3, 'Nome deve conter pelo menos 3 caracteres')
-          .max(120, 'Nome não deve ser maior que 120 caracteres'),
+          .string({ required_error: ErrorMessages.MSGE01 })
+          .min(3, ErrorMessages.MSGE08)
+          .max(120, ErrorMessages.MSGE09),
         syllabus: z
-          .string({ required_error: ErrorMessages.requiredFields })
-          .min(3, 'Ementa deve conter pelo menos 3 caracteres')
-          .max(500, 'Ementa não deve ser maior que 500 caracteres'),
+          .string({ required_error: ErrorMessages.MSGE01 })
+          .min(3, ErrorMessages.MSGE08)
+          .max(500, ErrorMessages.MSGE09),
         workload: z
           .number({
-            required_error: ErrorMessages.requiredFields,
+            required_error: ErrorMessages.MSGE01,
           })
-          .min(1, 'Carga horária não deve ser menor que 1')
-          .max(999, 'Carga horária não deve ser maior que 999'),
+          .min(1, ErrorMessages.MSGE10)
+          .max(999, ErrorMessages.MSGE11),
       })
       .partial({ guid: true, status: true });
 

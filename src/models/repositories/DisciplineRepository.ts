@@ -16,7 +16,7 @@ export class DisciplineRepository implements IRepository {
     });
 
     if (existingDiscipline) {
-      throw new AppError(ErrorMessages.alreadyExists);
+      throw new AppError(ErrorMessages.MSGE02);
     }
 
     const discipline = new Discipline(name, syllabus, workload);
@@ -60,7 +60,7 @@ export class DisciplineRepository implements IRepository {
         });
 
         if (existingDiscipline) {
-          throw new AppError(ErrorMessages.alreadyExists);
+          throw new AppError(ErrorMessages.MSGE02);
         }
       }
 
@@ -76,9 +76,9 @@ export class DisciplineRepository implements IRepository {
 
       return excludeFields(updatedDiscipline, ['createdAt', 'updatedAt']);
     } catch (e) {
-      if (e instanceof AppError) throw e;
+      if (e instanceof AppError || e instanceof Error) throw e;
 
-      throw new AppError(ErrorMessages.notFound, 404);
+      throw new AppError(ErrorMessages.MSGE05, 404);
     }
   }
 

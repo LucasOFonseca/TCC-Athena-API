@@ -10,7 +10,7 @@ export class ChangeDisciplineStatusController {
     const disciplineService = new DisciplineService();
 
     if (status === undefined) {
-      throw new AppError(ErrorMessages.invalidData);
+      throw new AppError(ErrorMessages.MSGE06);
     }
 
     const discipline = await disciplineService.changeStatus(guid, status);
