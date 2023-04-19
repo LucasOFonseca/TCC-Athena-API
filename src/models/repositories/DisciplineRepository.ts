@@ -107,7 +107,7 @@ export class DisciplineRepository implements IRepository {
 
     const data = await prismaClient.discipline.findMany({
       where,
-      orderBy: { createdAt: 'asc' },
+      orderBy: { createdAt: 'desc' },
       skip: args?.skip,
       take: args?.take,
     });

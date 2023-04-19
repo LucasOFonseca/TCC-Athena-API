@@ -39,11 +39,10 @@ export class PaginatedResponse<T> {
     const pageSize = req.query.pageSize ? Number(req.query.pageSize) : 10;
     const page = req.query.page ? Number(req.query.page) : 1;
     const skip = (page - 1) * pageSize;
-    const take = page * pageSize;
 
     const { data, totalItems } = await this.service.list({
       skip,
-      take,
+      take: pageSize,
       searchTerm: req.query.query as string,
       filterByStatus: req.query.filterByStatus as GenericStatus,
     });
