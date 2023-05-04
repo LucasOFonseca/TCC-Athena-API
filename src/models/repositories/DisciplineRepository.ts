@@ -10,7 +10,12 @@ import {
 } from '../dtos';
 
 export class DisciplineRepository implements IRepository {
-  async create({ name, syllabus, workload }: CreateDisciplineDTO) {
+  async create({
+    name,
+    syllabus,
+    workload,
+    weeklyClasses,
+  }: CreateDisciplineDTO) {
     const existingDiscipline = await prismaClient.discipline.findUnique({
       where: { name },
     });
@@ -19,7 +24,7 @@ export class DisciplineRepository implements IRepository {
       throw new AppError(ErrorMessages.MSGE02);
     }
 
-    const discipline = new Discipline(name, syllabus, workload);
+    const discipline = new Discipline(name, syllabus, workload, weeklyClasses);
 
     discipline.validate();
 
@@ -28,6 +33,7 @@ export class DisciplineRepository implements IRepository {
         name: discipline.name,
         syllabus: discipline.syllabus,
         workload: discipline.workload,
+        weeklyClasses: discipline.weeklyClasses,
       },
     });
 
@@ -43,6 +49,7 @@ export class DisciplineRepository implements IRepository {
         disciplineToUpdate.name,
         disciplineToUpdate.syllabus,
         disciplineToUpdate.workload,
+        disciplineToUpdate.weeklyClasses,
         disciplineToUpdate.guid,
         disciplineToUpdate.status as GenericStatus
       );
@@ -51,6 +58,8 @@ export class DisciplineRepository implements IRepository {
       if (data.syllabus !== undefined) discipline.syllabus = data.syllabus;
       if (data.workload !== undefined) discipline.workload = data.workload;
       if (data.status !== undefined) discipline.status = data.status;
+      if (data.weeklyClasses !== undefined)
+        discipline.weeklyClasses = data.weeklyClasses;
 
       discipline.validate();
 
@@ -66,12 +75,7 @@ export class DisciplineRepository implements IRepository {
 
       const updatedDiscipline = await prismaClient.discipline.update({
         where: { guid },
-        data: {
-          name: discipline.name,
-          syllabus: discipline.syllabus,
-          workload: discipline.workload,
-          status: discipline.status,
-        },
+        data: discipline.toJSON(),
       });
 
       return excludeFields(updatedDiscipline, ['createdAt', 'updatedAt']);

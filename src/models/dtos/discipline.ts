@@ -6,6 +6,7 @@ export interface DisciplineDTO {
   name: string;
   syllabus: string;
   workload: number;
+  weeklyClasses: number;
 }
 
 export interface CreateDisciplineDTO
@@ -17,4 +18,5 @@ export interface UpdateDisciplineDTO {
   name?: string;
   syllabus?: string;
   workload?: number;
+  weeklyClasses?: number;
 }

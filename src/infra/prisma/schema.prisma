@@ -13,13 +13,14 @@ enum Status {
 }
 
 model Discipline {
-  guid      String   @id @default(uuid())
-  name      String   @unique @db.VarChar(120)
-  syllabus  String   @db.VarChar(500)
-  workload  Int
-  status    Status   @default(active)
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  guid          String   @id @default(uuid())
+  name          String   @unique @db.VarChar(120)
+  syllabus      String   @db.VarChar(500)
+  workload      Int
+  weeklyClasses Int      @default(1)
+  status        Status   @default(active)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
   @@map("disciplines")
 }

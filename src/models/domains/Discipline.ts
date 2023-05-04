@@ -7,6 +7,7 @@ export class Discipline {
     private _name: string,
     private _syllabus: string,
     private _workload: number,
+    private _weeklyClasses: number,
     private _guid?: string,
     private _status?: GenericStatus
   ) {}
@@ -35,6 +36,14 @@ export class Discipline {
     this._workload = workload;
   }
 
+  get weeklyClasses() {
+    return this._weeklyClasses;
+  }
+
+  set weeklyClasses(weeklyClasses: number) {
+    this._weeklyClasses = weeklyClasses;
+  }
+
   get guid() {
     return this._guid;
   }
@@ -56,6 +65,7 @@ export class Discipline {
       name: this.name,
       syllabus: this.syllabus,
       workload: this.workload,
+      weeklyClasses: this.weeklyClasses,
       guid: this.guid,
       status: this.status,
     };
@@ -82,6 +92,10 @@ export class Discipline {
           })
           .min(1, ErrorMessages.MSGE10)
           .max(999, ErrorMessages.MSGE11),
+        weeklyClasses: z
+          .number({ required_error: ErrorMessages.MSGE01 })
+          .min(1, ErrorMessages.MSGE10)
+          .max(35, ErrorMessages.MSGE11),
       })
       .partial({ guid: true, status: true });
 
