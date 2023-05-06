@@ -1,16 +1,16 @@
 import { GenericStatus } from './status';
 
-export interface DisciplineDTO {
-  guid: string;
-  status: GenericStatus;
+export interface CreateDisciplineDTO {
   name: string;
   syllabus: string;
   workload: number;
   weeklyClasses: number;
 }
 
-export interface CreateDisciplineDTO
-  extends Omit<DisciplineDTO, 'guid' | 'status'> {}
+export interface DisciplineDTO extends CreateDisciplineDTO {
+  guid: string;
+  status: GenericStatus;
+}
 
 export interface UpdateDisciplineDTO {
   guid?: string;

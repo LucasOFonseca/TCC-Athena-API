@@ -12,15 +12,66 @@ enum Status {
   inactive
 }
 
+enum RoleValue {
+  principal
+  secretary
+  coordinator
+  educator
+}
+
 model Discipline {
   guid          String   @id @default(uuid())
   name          String   @unique @db.VarChar(120)
   syllabus      String   @db.VarChar(500)
   workload      Int
-  weeklyClasses Int      @default(1)
+  weeklyClasses Int      @default(1) @map("weekly_classes")
   status        Status   @default(active)
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
   @@map("disciplines")
+}
+
+model Role {
+  guid         String    @id @default(uuid())
+  role         RoleValue
+  Employee     Employee  @relation(fields: [employeeGuid], references: [guid])
+  employeeGuid String    @map("employee_guid")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  @@map("roles")
+}
+
+model Address {
+  guid         String    @id @default(uuid())
+  cep          String    @db.VarChar(8)
+  city         String    @db.VarChar(120)
+  state        String    @db.VarChar(2)
+  neighborhood String    @db.VarChar(120)
+  street       String    @db.VarChar(120)
+  number       String    @db.VarChar(10)
+  employee     Employee?
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  @@map("addresses")
+}
+
+model Employee {
+  guid        String   @id @default(uuid())
+  status      Status   @default(active)
+  roles       Role[]
+  name        String   @db.VarChar(120)
+  cpf         String   @unique @db.VarChar(11)
+  birthdate   DateTime
+  phoneNumber String   @map("phone_number") @db.VarChar(11)
+  email       String   @unique @db.VarChar(256)
+  password    String
+  address     Address  @relation(fields: [addressGuid], references: [guid])
+  addressGuid String   @unique @map("address_guid")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("employees")
 }
