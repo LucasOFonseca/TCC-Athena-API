@@ -3,6 +3,8 @@ import { excludeFields, generatePassword } from '../../helpers/utils';
 import { AppError, ErrorMessages } from '../../infra/http/errors';
 import { prismaClient } from '../../infra/prisma';
 import { FindAllArgs, IRepository } from '../../interfaces';
+import { MailProvider } from '../../providers/mail';
+import { firstAccessEmailTemplate } from '../../providers/mail/templates';
 import { Address, Employee } from '../domains';
 import { CreateEmployeeDTO } from '../dtos';
 
@@ -16,8 +18,8 @@ export class EmployeeRepository implements IRepository {
     phoneNumber,
     roles,
   }: CreateEmployeeDTO) {
-    const existingEmployee = await prismaClient.employee.findUnique({
-      where: { cpf },
+    const existingEmployee = await prismaClient.employee.findFirst({
+      where: { OR: [{ cpf }, { email }] },
     });
 
     if (existingEmployee) {
@@ -73,6 +75,14 @@ export class EmployeeRepository implements IRepository {
         },
       },
     });
+
+    const mailProvider = new MailProvider();
+
+    await mailProvider.sendMail(
+      employee.email,
+      'Bem-vindo(a) ao Athena!',
+      firstAccessEmailTemplate(employee.name, employee.email, employee.password)
+    );
 
     const employeeAddress = await prismaClient.address.findUnique({
       where: {
