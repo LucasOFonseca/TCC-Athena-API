@@ -19,7 +19,7 @@ employeeRoutes.post('/', createEmployeeController.handle);
 employeeRoutes.get('/', listEmployeesController.handle);
 employeeRoutes.put('/:guid', updateEmployeeController.handle);
 employeeRoutes.put(
-  '/reset-password/:guid',
+  '/:guid/reset-password',
   resetEmployeePasswordController.handle
 );
 employeeRoutes.patch('/:guid', changeEmployeeStatusController.handle);
