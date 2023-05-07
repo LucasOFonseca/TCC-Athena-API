@@ -25,6 +25,7 @@
     "no-restricted-globals": "off",
     "no-shadow": "off",
     "@typescript-eslint/no-shadow": "error",
+    "@typescript-eslint/no-namespace": "off",
     "@typescript-eslint/adjacent-overload-signatures": "off",
     "@typescript-eslint/no-empty-interface": "off",
     "@typescript-eslint/naming-convention": [

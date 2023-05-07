@@ -141,7 +141,26 @@ export class EmployeeRepository implements IRepository {
       });
 
       return { ...employee, roles: employee.roles.map((role) => role.role) };
-    } catch (e) {
+    } catch {
+      throw new AppError(ErrorMessages.MSGE02);
+    }
+  }
+
+  async findByGuid(guid: string) {
+    try {
+      const employee = await prismaClient.employee.findUniqueOrThrow({
+        where: { guid },
+        include: {
+          roles: {
+            select: {
+              role: true,
+            },
+          },
+        },
+      });
+
+      return { ...employee, roles: employee.roles.map((role) => role.role) };
+    } catch {
       throw new AppError(ErrorMessages.MSGE02);
     }
   }
