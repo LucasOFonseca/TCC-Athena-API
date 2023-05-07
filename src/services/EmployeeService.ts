@@ -1,6 +1,6 @@
 import { FindAllArgs, IService } from '../interfaces';
 import { CreateEmployeeDTO, GenericStatus } from '../models/dtos';
-import { EmployeeRepository } from '../models/repositories/EmployeeRepository';
+import { EmployeeRepository } from '../models/repositories';
 
 export class EmployeeService implements IService {
   private employeeRepository = new EmployeeRepository();

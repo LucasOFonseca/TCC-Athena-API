@@ -63,6 +63,13 @@ export class EmployeeRepository implements IRepository {
         phoneNumber: employee.phoneNumber,
         email: employee.email,
         password: hashPassword,
+        roles: {
+          createMany: {
+            data: employee.roles.map((role) => ({
+              role,
+            })),
+          },
+        },
         address: {
           create: {
             street: employee.address.street,
@@ -71,6 +78,14 @@ export class EmployeeRepository implements IRepository {
             city: employee.address.city,
             state: employee.address.state,
             cep: employee.address.cep,
+          },
+        },
+      },
+      include: {
+        address: true,
+        roles: {
+          select: {
+            role: true,
           },
         },
       },
@@ -84,12 +99,6 @@ export class EmployeeRepository implements IRepository {
       firstAccessEmailTemplate(employee.name, employee.email, employee.password)
     );
 
-    const employeeAddress = await prismaClient.address.findUnique({
-      where: {
-        guid: createdEmployee.addressGuid,
-      },
-    });
-
     const dataToReturn = {
       ...excludeFields(createdEmployee, [
         'createdAt',
@@ -97,7 +106,11 @@ export class EmployeeRepository implements IRepository {
         'password',
         'addressGuid',
       ]),
-      address: excludeFields(employeeAddress, ['createdAt', 'updatedAt']),
+      roles: createdEmployee.roles.map((role) => role.role),
+      address: excludeFields(createdEmployee.address, [
+        'createdAt',
+        'updatedAt',
+      ]),
     };
 
     return dataToReturn;
@@ -112,5 +125,24 @@ export class EmployeeRepository implements IRepository {
       data: [],
       totalItems: 0,
     };
+  }
+
+  async findByEmail(email: string) {
+    try {
+      const employee = await prismaClient.employee.findUniqueOrThrow({
+        where: { email },
+        include: {
+          roles: {
+            select: {
+              role: true,
+            },
+          },
+        },
+      });
+
+      return { ...employee, roles: employee.roles.map((role) => role.role) };
+    } catch (e) {
+      throw new AppError(ErrorMessages.MSGE02);
+    }
   }
 }

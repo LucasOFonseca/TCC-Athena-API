@@ -11,4 +11,5 @@ export enum ErrorMessages {
   MSGE10 = 'Valor do campo menor que o mínimo permitido',
   MSGE11 = 'Valor do campo maior que o máximo permitido',
   MSGE12 = 'CPF inválido',
+  MSGE13 = 'Credenciais inválidas',
 }

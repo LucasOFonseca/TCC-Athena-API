@@ -26,6 +26,8 @@ yarn
 DATABASE_URL = mysql://user:password@localhost:3306/database
 EMAIL_PROVIDER_USER = example@gmail.com
 EMAIL_PROVIDER_PASSWORD = password
+JWT_SECRET = secret
+JWT_EXPIRES_IN = 1d
 BCRYPT_SALT = 17
 PORT = 3333
 ```
