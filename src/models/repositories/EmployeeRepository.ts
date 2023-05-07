@@ -290,9 +290,13 @@ export class EmployeeRepository implements IRepository {
               name: {
                 contains: args?.searchTerm,
               },
+            },
+            {
               cpf: {
                 contains: args?.searchTerm,
               },
+            },
+            {
               email: {
                 contains: args?.searchTerm,
               },
