@@ -45,6 +45,7 @@ export class PaginatedResponse<T> {
       take: pageSize,
       searchTerm: req.query.query as string,
       filterByStatus: req.query.filterByStatus as GenericStatus,
+      itemsToExclude: [req.user.guid],
     });
 
     const response: PaginatedDataResponseDTO<T> = {

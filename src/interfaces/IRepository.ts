@@ -5,6 +5,7 @@ export type FindAllArgs = {
   take?: number;
   searchTerm?: string;
   filterByStatus?: GenericStatus;
+  itemsToExclude?: string[];
 };
 
 export type FindAllReturn = {
