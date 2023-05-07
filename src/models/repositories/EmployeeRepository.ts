@@ -4,9 +4,17 @@ import { AppError, ErrorMessages } from '../../infra/http/errors';
 import { prismaClient } from '../../infra/prisma';
 import { FindAllArgs, IRepository } from '../../interfaces';
 import { MailProvider } from '../../providers/mail';
-import { firstAccessEmailTemplate } from '../../providers/mail/templates';
+import {
+  firstAccessEmailTemplate,
+  newPasswordEmailTemplate,
+} from '../../providers/mail/templates';
 import { Address, Employee } from '../domains';
-import { CreateEmployeeDTO } from '../dtos';
+import {
+  CreateEmployeeDTO,
+  EmployeeRole,
+  GenericStatus,
+  UpdateEmployeeDTO,
+} from '../dtos';
 
 export class EmployeeRepository implements IRepository {
   async create({
@@ -116,14 +124,216 @@ export class EmployeeRepository implements IRepository {
     return dataToReturn;
   }
 
-  async update(guid: string, data: any) {
-    throw new Error('Method not implemented.');
+  async update(guid: string, data: UpdateEmployeeDTO) {
+    const employeeToUpdate = await prismaClient.employee.findUnique({
+      where: { guid },
+      include: {
+        address: true,
+        roles: {
+          select: {
+            role: true,
+          },
+        },
+      },
+    });
+
+    if (!employeeToUpdate) {
+      throw new AppError(ErrorMessages.MSGE05, 404);
+    }
+
+    const address = new Address(
+      employeeToUpdate.address.street,
+      employeeToUpdate.address.number,
+      employeeToUpdate.address.neighborhood,
+      employeeToUpdate.address.city,
+      employeeToUpdate.address.state,
+      employeeToUpdate.address.cep,
+      employeeToUpdate.address.guid
+    );
+
+    if (data.address) {
+      address.setAll(data.address);
+      address.validate();
+    }
+
+    const employee = new Employee(
+      employeeToUpdate.roles.map((role) => role.role) as EmployeeRole[],
+      employeeToUpdate.name,
+      employeeToUpdate.cpf,
+      employeeToUpdate.birthdate.toISOString(),
+      employeeToUpdate.phoneNumber,
+      employeeToUpdate.email,
+      employeeToUpdate.password,
+      address.toJSON(),
+      employeeToUpdate.status as GenericStatus,
+      employeeToUpdate.guid
+    );
+
+    if (data.roles !== undefined) employee.roles = data.roles;
+    if (data.name !== undefined) employee.name = data.name;
+    if (data.cpf !== undefined) employee.cpf = data.cpf;
+    if (data.birthdate !== undefined) employee.birthdate = data.birthdate;
+    if (data.phoneNumber !== undefined) employee.phoneNumber = data.phoneNumber;
+    if (data.email !== undefined) employee.email = data.email;
+    if (data.password !== undefined) employee.password = data.password;
+    if (data.status !== undefined) employee.status = data.status;
+
+    employee.validate();
+
+    if (
+      employee.cpf !== employeeToUpdate.cpf ||
+      employee.email !== employeeToUpdate.email
+    ) {
+      const existingEmployee = await prismaClient.employee.findFirst({
+        where: { OR: [{ cpf: employee.cpf }, { email: employee.email }] },
+      });
+
+      if (existingEmployee) {
+        throw new AppError(ErrorMessages.MSGE02);
+      }
+    }
+
+    const needsToUpdateRoles =
+      JSON.stringify(employee.roles) !== JSON.stringify(employeeToUpdate.roles);
+
+    if (needsToUpdateRoles) {
+      await prismaClient.role.deleteMany({
+        where: {
+          employeeGuid: employeeToUpdate.guid,
+        },
+      });
+    }
+
+    let hashPassword: string;
+
+    if (employee.password !== employeeToUpdate.password) {
+      hashPassword = await bcrypt.hash(
+        employee.password,
+        Number(process.env.BCRYPT_SALT)
+      );
+    }
+
+    const updatedEmployee = await prismaClient.employee.update({
+      where: { guid },
+      data: {
+        status: employee.status,
+        name: employee.name,
+        cpf: employee.cpf,
+        birthdate: employee.birthdate,
+        phoneNumber: employee.phoneNumber,
+        email: employee.email,
+        password: hashPassword,
+        roles: needsToUpdateRoles
+          ? {
+              createMany: {
+                data: employee.roles.map((role) => ({
+                  role,
+                })),
+              },
+            }
+          : undefined,
+        address: {
+          update: {
+            ...address.toJSON(),
+          },
+        },
+      },
+      include: {
+        address: true,
+        roles: {
+          select: {
+            role: true,
+          },
+        },
+      },
+    });
+
+    if (data.password) {
+      const mailProvider = new MailProvider();
+
+      await mailProvider.sendMail(
+        employee.email,
+        'Novos dados de acesso ao Athena',
+        newPasswordEmailTemplate(
+          employee.name,
+          employee.email,
+          employee.password
+        )
+      );
+    }
+
+    const dataToReturn = {
+      ...excludeFields(updatedEmployee, [
+        'createdAt',
+        'updatedAt',
+        'password',
+        'addressGuid',
+      ]),
+      roles: updatedEmployee.roles.map((role) => role.role),
+      address: excludeFields(updatedEmployee.address, [
+        'createdAt',
+        'updatedAt',
+      ]),
+    };
+
+    return dataToReturn;
   }
 
-  async findAll(args: FindAllArgs) {
+  async findAll(args?: FindAllArgs) {
+    const where = {
+      OR: args?.searchTerm
+        ? [
+            {
+              name: {
+                contains: args?.searchTerm,
+              },
+              cpf: {
+                contains: args?.searchTerm,
+              },
+              email: {
+                contains: args?.searchTerm,
+              },
+            },
+          ]
+        : undefined,
+      status: {
+        equals: args?.filterByStatus,
+      },
+    };
+
+    const totalItems = await prismaClient.employee.count({
+      where,
+    });
+
+    const data = await prismaClient.employee.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      skip: args?.skip,
+      take: args?.take,
+      include: {
+        address: true,
+        roles: {
+          select: {
+            role: true,
+          },
+        },
+      },
+    });
+
+    const dataToUse = data.map((employee) => ({
+      ...excludeFields(employee, [
+        'createdAt',
+        'updatedAt',
+        'password',
+        'addressGuid',
+      ]),
+      roles: employee.roles.map((role) => role.role),
+      address: excludeFields(employee.address, ['createdAt', 'updatedAt']),
+    }));
+
     return {
-      data: [],
-      totalItems: 0,
+      data: dataToUse,
+      totalItems,
     };
   }
 

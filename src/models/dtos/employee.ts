@@ -15,3 +15,16 @@ export interface EmployeeDTO extends CreateEmployeeDTO {
   status: GenericStatus;
   address: AddressDTO;
 }
+
+export interface UpdateEmployeeDTO {
+  guid?: string;
+  status?: GenericStatus;
+  name?: string;
+  cpf?: string;
+  email?: string;
+  address?: AddressDTO;
+  roles?: EmployeeRole[];
+  birthdate?: string;
+  phoneNumber?: string;
+  password?: string;
+}

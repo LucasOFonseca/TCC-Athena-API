@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { AppError, ErrorMessages } from '../../infra/http/errors';
+import { AddressDTO } from '../dtos';
 
 export class Address {
   constructor(
@@ -78,6 +79,16 @@ export class Address {
       state: this.state,
       cep: this.cep,
     };
+  }
+
+  setAll(data: AddressDTO) {
+    this.guid = data.guid;
+    this.street = data.street;
+    this.number = data.number;
+    this.neighborhood = data.neighborhood;
+    this.city = data.city;
+    this.state = data.state;
+    this.cep = data.cep;
   }
 
   validate() {

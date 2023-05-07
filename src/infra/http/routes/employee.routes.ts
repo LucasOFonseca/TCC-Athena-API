@@ -1,10 +1,27 @@
 import { Router } from 'express';
-import { CreateEmployeeController } from '../../../controllers/employee';
+import {
+  ChangeEmployeeStatusController,
+  CreateEmployeeController,
+  ListEmployeesController,
+  ResetEmployeePasswordController,
+  UpdateEmployeeController,
+} from '../../../controllers/employee';
 
 const employeeRoutes = Router();
 
 const createEmployeeController = new CreateEmployeeController();
+const listEmployeesController = new ListEmployeesController();
+const updateEmployeeController = new UpdateEmployeeController();
+const resetEmployeePasswordController = new ResetEmployeePasswordController();
+const changeEmployeeStatusController = new ChangeEmployeeStatusController();
 
 employeeRoutes.post('/', createEmployeeController.handle);
+employeeRoutes.get('/', listEmployeesController.handle);
+employeeRoutes.put('/:guid', updateEmployeeController.handle);
+employeeRoutes.put(
+  '/reset-password/:guid',
+  resetEmployeePasswordController.handle
+);
+employeeRoutes.patch('/:guid', changeEmployeeStatusController.handle);
 
 export { employeeRoutes };

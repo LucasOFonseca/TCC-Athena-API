@@ -1,5 +1,10 @@
+import { generatePassword } from '../helpers/utils';
 import { FindAllArgs, IService } from '../interfaces';
-import { CreateEmployeeDTO, GenericStatus } from '../models/dtos';
+import {
+  CreateEmployeeDTO,
+  GenericStatus,
+  UpdateEmployeeDTO,
+} from '../models/dtos';
 import { EmployeeRepository } from '../models/repositories';
 
 export class EmployeeService implements IService {
@@ -11,7 +16,7 @@ export class EmployeeService implements IService {
     return employee;
   }
 
-  async update(guid: string, data: any) {
+  async update(guid: string, data: UpdateEmployeeDTO) {
     const updatedEmployee = await this.employeeRepository.update(guid, data);
 
     return updatedEmployee;
@@ -23,6 +28,12 @@ export class EmployeeService implements IService {
     });
 
     return updatedEmployee;
+  }
+
+  async resetPassword(guid: string) {
+    await this.employeeRepository.update(guid, {
+      password: generatePassword(),
+    });
   }
 
   async list(args?: FindAllArgs) {
