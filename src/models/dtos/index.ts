@@ -1,4 +1,5 @@
 export * from './address';
+export * from './course';
 export * from './discipline';
 export * from './employee';
 export * from './employeeRole';

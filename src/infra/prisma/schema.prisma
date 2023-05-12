@@ -75,3 +75,13 @@ model Employee {
 
   @@map("employees")
 }
+
+model Course {
+  guid      String   @id @default(uuid())
+  status    Status   @default(active)
+  name      String   @unique @db.VarChar(120)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("courses")
+}
