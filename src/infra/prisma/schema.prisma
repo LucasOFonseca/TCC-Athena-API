@@ -85,3 +85,14 @@ model Course {
 
   @@map("courses")
 }
+
+model Classroom {
+  guid      String   @id @default(uuid())
+  status    Status   @default(active)
+  name      String   @unique @db.VarChar(120)
+  capacity  Int
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("classrooms")
+}
