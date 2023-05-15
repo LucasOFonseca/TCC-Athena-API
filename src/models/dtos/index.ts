@@ -6,3 +6,4 @@ export * from './employee';
 export * from './employeeRole';
 export * from './paginatedData';
 export * from './status';
+export * from './student';

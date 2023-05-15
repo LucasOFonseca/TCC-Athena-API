@@ -52,6 +52,7 @@ model Address {
   street       String    @db.VarChar(120)
   number       String    @db.VarChar(10)
   employee     Employee?
+  student      Student?
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
 
@@ -74,6 +75,23 @@ model Employee {
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   @@map("employees")
+}
+
+model Student {
+  guid        String   @id @default(uuid())
+  status      Status   @default(active)
+  name        String   @db.VarChar(120)
+  cpf         String   @unique @db.VarChar(11)
+  birthdate   DateTime
+  phoneNumber String   @map("phone_number") @db.VarChar(11)
+  email       String   @unique @db.VarChar(256)
+  password    String
+  address     Address  @relation(fields: [addressGuid], references: [guid])
+  addressGuid String   @unique @map("address_guid")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("students")
 }
 
 model Course {
