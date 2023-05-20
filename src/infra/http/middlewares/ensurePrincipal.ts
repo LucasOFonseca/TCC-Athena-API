@@ -10,7 +10,7 @@ export async function ensurePrincipal(
   const { roles } = req.user;
 
   if (!roles.includes(EmployeeRole.principal)) {
-    throw new AppError(ErrorMessages.MSGE14, 401);
+    throw new AppError(ErrorMessages.MSGE14, 403);
   }
 
   next();

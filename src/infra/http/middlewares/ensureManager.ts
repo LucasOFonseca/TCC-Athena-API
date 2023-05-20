@@ -17,7 +17,7 @@ export async function ensureManager(
         role === EmployeeRole.secretary
     )
   ) {
-    throw new AppError(ErrorMessages.MSGE14, 401);
+    throw new AppError(ErrorMessages.MSGE14, 403);
   }
 
   next();
