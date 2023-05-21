@@ -13,4 +13,6 @@ export enum ErrorMessages {
   MSGE12 = 'CPF inválido',
   MSGE13 = 'Credenciais inválidas',
   MSGE14 = 'Acesso não autorizado',
+  MSGE15 = 'A lista não deve possuir items duplicados',
+  MSGE16 = 'Cadastro indisponível',
 }

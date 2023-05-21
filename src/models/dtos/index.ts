@@ -4,6 +4,7 @@ export * from './course';
 export * from './discipline';
 export * from './employee';
 export * from './employeeRole';
+export * from './matrix';
 export * from './paginatedData';
 export * from './status';
 export * from './student';

@@ -3,4 +3,5 @@ export * from './ClassroomService';
 export * from './CourseService';
 export * from './DisciplineService';
 export * from './EmployeeService';
+export * from './MatrixService';
 export * from './StudentService';

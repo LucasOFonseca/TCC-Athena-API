@@ -5,6 +5,7 @@ import { FindAllArgs, IRepository } from '../../interfaces';
 import { Discipline } from '../domains';
 import {
   CreateDisciplineDTO,
+  DisciplineDTO,
   GenericStatus,
   UpdateDisciplineDTO,
 } from '../dtos';
@@ -120,5 +121,16 @@ export class DisciplineRepository implements IRepository {
       data: parseArrayOfData(data, ['createdAt', 'updatedAt']),
       totalItems,
     };
+  }
+
+  async findManyByGuidList(guids: string[]): Promise<DisciplineDTO[]> {
+    const disciplines = await prismaClient.discipline.findMany({
+      where: { guid: { in: guids } },
+    });
+
+    return parseArrayOfData(disciplines, [
+      'createdAt',
+      'updatedAt',
+    ]) as DisciplineDTO[];
   }
 }

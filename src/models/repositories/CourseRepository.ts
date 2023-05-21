@@ -3,7 +3,12 @@ import { AppError, ErrorMessages } from '../../infra/http/errors';
 import { prismaClient } from '../../infra/prisma';
 import { FindAllArgs, IRepository } from '../../interfaces';
 import { Course } from '../domains';
-import { CreateCourseDTO, GenericStatus, UpdateCourseDTO } from '../dtos';
+import {
+  CourseDTO,
+  CreateCourseDTO,
+  GenericStatus,
+  UpdateCourseDTO,
+} from '../dtos';
 
 export class CourseRepository implements IRepository {
   async create({ name }: CreateCourseDTO) {
@@ -97,5 +102,17 @@ export class CourseRepository implements IRepository {
       data: parseArrayOfData(data, ['createdAt', 'updatedAt']),
       totalItems,
     };
+  }
+
+  async findByGuid(guid: string): Promise<CourseDTO> {
+    try {
+      const course = await prismaClient.course.findUniqueOrThrow({
+        where: { guid },
+      });
+
+      return excludeFields(course, ['createdAt', 'updatedAt']) as CourseDTO;
+    } catch {
+      throw new AppError(ErrorMessages.MSGE05, 404);
+    }
   }
 }
