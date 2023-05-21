@@ -60,6 +60,18 @@ export class CourseRepository implements IRepository {
         }
       }
 
+      if (
+        course.status !== courseToUpdate.status &&
+        course.status === GenericStatus.inactive
+      ) {
+        const isInUse =
+          (await prismaClient.matrix.count({
+            where: { courseGuid: guid },
+          })) > 0;
+
+        if (isInUse) throw new AppError(ErrorMessages.MSGE04);
+      }
+
       const updatedCourse = await prismaClient.course.update({
         where: { guid },
         data: course.toJSON(),
