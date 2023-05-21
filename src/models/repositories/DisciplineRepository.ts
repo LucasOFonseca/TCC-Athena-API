@@ -74,6 +74,18 @@ export class DisciplineRepository implements IRepository {
         }
       }
 
+      if (
+        discipline.status !== disciplineToUpdate.status &&
+        discipline.status === GenericStatus.inactive
+      ) {
+        const isInUse =
+          (await prismaClient.matrixModule.count({
+            where: { disciplines: { some: { guid } } },
+          })) > 0;
+
+        if (isInUse) throw new AppError(ErrorMessages.MSGE04);
+      }
+
       const updatedDiscipline = await prismaClient.discipline.update({
         where: { guid },
         data: discipline.toJSON(),
