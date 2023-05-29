@@ -15,7 +15,8 @@
     ]
   },
   "prisma": {
-    "schema": "./src/infra/prisma/schema.prisma"
+    "schema": "./src/infra/prisma/schema.prisma",
+    "seed": "ts-node-dev src/infra/prisma/seed.ts"
   },
   "keywords": [],
   "author": "Lucas Fonseca",

@@ -12,11 +12,27 @@ enum Status {
   inactive
 }
 
+enum DayOfWeek {
+  monday
+  tuesday
+  wednesday
+  thursday
+  friday
+  saturday
+  sunday
+}
+
 enum RoleValue {
   principal
   secretary
   coordinator
   educator
+}
+
+enum ShiftValue {
+  morning
+  afternoon
+  evening
 }
 
 model Discipline {
@@ -140,4 +156,30 @@ model Classroom {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("classrooms")
+}
+
+model Shift {
+  guid           String          @id @default(uuid())
+  status         Status          @default(active)
+  shift          ShiftValue
+  ClassSchedules ClassSchedule[]
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+
+  @@map("shifts")
+}
+
+model ClassSchedule {
+  guid        String    @id @default(uuid())
+  status      Status    @default(active)
+  classNumber Int       @map("class_number")
+  dayOfWeek   DayOfWeek @map("day_of_week")
+  shift       Shift     @relation(fields: [shiftGuid], references: [guid])
+  shiftGuid   String    @map("shift_guid")
+  startTime   DateTime  @map("start_time") @db.Time()
+  endTime     DateTime  @map("end_time") @db.Time()
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@map("class_schedules")
 }
