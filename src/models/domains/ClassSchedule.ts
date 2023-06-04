@@ -112,7 +112,16 @@ export class ClassSchedule {
         startTime: z
           .string({ required_error: ErrorMessages.MSGE01 })
           .superRefine((startTime, ctx) => {
-            const isLaterThanEndTime = dayjs(startTime).isAfter(this.endTime);
+            const isLaterThanEndTime = dayjs(startTime)
+              .set('year', 1970)
+              .set('month', 1)
+              .set('day', 1)
+              .isAfter(
+                dayjs(this.endTime)
+                  .set('year', 1970)
+                  .set('month', 1)
+                  .set('day', 1)
+              );
 
             if (isLaterThanEndTime) {
               ctx.addIssue({
@@ -124,9 +133,18 @@ export class ClassSchedule {
         endTime: z
           .string({ required_error: ErrorMessages.MSGE01 })
           .superRefine((endTime, ctx) => {
-            const isLaterThanEndTime = dayjs(endTime).isBefore(this.startTime);
+            const isEarlierThanStartTime = dayjs(endTime)
+              .set('year', 1970)
+              .set('month', 1)
+              .set('day', 1)
+              .isBefore(
+                dayjs(this.startTime)
+                  .set('year', 1970)
+                  .set('month', 1)
+                  .set('day', 1)
+              );
 
-            if (isLaterThanEndTime) {
+            if (isEarlierThanStartTime) {
               ctx.addIssue({
                 code: z.ZodIssueCode.custom,
                 message: ErrorMessages.MSGE10,
