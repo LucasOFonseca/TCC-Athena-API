@@ -1,4 +1,5 @@
 /* eslint-disable no-restricted-syntax */
+import dayjs from 'dayjs';
 import { AppError, ErrorMessages } from '../../infra/http/errors';
 import { prismaClient } from '../../infra/prisma';
 import { ClassSchedule } from '../domains';
@@ -52,6 +53,40 @@ export class ClassScheduleRepository {
         return classSchedule.toJSON();
       }
     );
+
+    for await (const classSchedule of validatedData) {
+      const classSchedulesInDayOfWeek =
+        await prismaClient.classSchedule.findMany({
+          where: {
+            dayOfWeek: classSchedule.dayOfWeek,
+          },
+        });
+
+      if (classSchedulesInDayOfWeek.length > 0) {
+        const dayjsStartTime = dayjs(classSchedule.startTime)
+          .set('year', 1970)
+          .set('month', 0)
+          .set('date', 1);
+        const dayjsEndTime = dayjs(classSchedule.endTime)
+          .set('year', 1970)
+          .set('month', 0)
+          .set('date', 1);
+
+        const isOverlapping = classSchedulesInDayOfWeek.some(
+          (schedule) =>
+            (dayjs(dayjsStartTime).isAfter(schedule.startTime, 'minute') &&
+              dayjs(dayjsStartTime).isBefore(schedule.endTime, 'minute')) ||
+            (dayjs(dayjsEndTime).isAfter(schedule.startTime, 'minute') &&
+              dayjs(dayjsEndTime).isBefore(schedule.endTime, 'minute')) ||
+            (dayjs(dayjsStartTime).isBefore(schedule.startTime, 'minute') &&
+              dayjs(dayjsEndTime).isAfter(schedule.endTime, 'minute')) ||
+            (dayjs(dayjsStartTime).isSame(schedule.startTime, 'minute') &&
+              dayjs(dayjsEndTime).isSame(schedule.endTime, 'minute'))
+        );
+
+        if (isOverlapping) throw new AppError(ErrorMessages.MSGE02);
+      }
+    }
 
     await prismaClient.classSchedule.createMany({
       data: validatedData,
@@ -107,6 +142,37 @@ export class ClassScheduleRepository {
           });
 
         if (existingClassSchedule) throw new AppError(ErrorMessages.MSGE02);
+      }
+      const classSchedulesInDayOfWeek =
+        await prismaClient.classSchedule.findMany({
+          where: {
+            dayOfWeek: classSchedule.dayOfWeek,
+          },
+        });
+
+      if (classSchedulesInDayOfWeek.length > 0) {
+        const dayjsStartTime = dayjs(classSchedule.startTime)
+          .set('year', 1970)
+          .set('month', 0)
+          .set('date', 1);
+        const dayjsEndTime = dayjs(classSchedule.endTime)
+          .set('year', 1970)
+          .set('month', 0)
+          .set('date', 1);
+
+        const isOverlapping = classSchedulesInDayOfWeek.some(
+          (s) =>
+            (dayjs(dayjsStartTime).isAfter(s.startTime, 'minute') &&
+              dayjs(dayjsStartTime).isBefore(s.endTime, 'minute')) ||
+            (dayjs(dayjsEndTime).isAfter(s.startTime, 'minute') &&
+              dayjs(dayjsEndTime).isBefore(s.endTime, 'minute')) ||
+            (dayjs(dayjsStartTime).isBefore(s.startTime, 'minute') &&
+              dayjs(dayjsEndTime).isAfter(s.endTime, 'minute')) ||
+            (dayjs(dayjsStartTime).isSame(schedule.startTime, 'minute') &&
+              dayjs(dayjsEndTime).isSame(schedule.endTime, 'minute'))
+        );
+
+        if (isOverlapping) throw new AppError(ErrorMessages.MSGE02);
       }
 
       await prismaClient.classSchedule.update({

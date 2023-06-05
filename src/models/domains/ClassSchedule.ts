@@ -114,13 +114,14 @@ export class ClassSchedule {
           .superRefine((startTime, ctx) => {
             const isLaterThanEndTime = dayjs(startTime)
               .set('year', 1970)
-              .set('month', 1)
-              .set('day', 1)
+              .set('month', 0)
+              .set('date', 1)
               .isAfter(
                 dayjs(this.endTime)
                   .set('year', 1970)
-                  .set('month', 1)
-                  .set('day', 1)
+                  .set('month', 0)
+                  .set('date', 1),
+                'minute'
               );
 
             if (isLaterThanEndTime) {
@@ -135,13 +136,14 @@ export class ClassSchedule {
           .superRefine((endTime, ctx) => {
             const isEarlierThanStartTime = dayjs(endTime)
               .set('year', 1970)
-              .set('month', 1)
+              .set('month', 0)
               .set('day', 1)
               .isBefore(
                 dayjs(this.startTime)
                   .set('year', 1970)
-                  .set('month', 1)
-                  .set('day', 1)
+                  .set('month', 0)
+                  .set('day', 1),
+                'minute'
               );
 
             if (isEarlierThanStartTime) {

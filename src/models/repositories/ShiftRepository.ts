@@ -1,3 +1,4 @@
+import dayjs from 'dayjs';
 import { excludeFields, parseArrayOfData } from '../../helpers/utils';
 import { prismaClient } from '../../infra/prisma';
 import { ClassScheduleDTO, GenericStatus } from '../dtos';
@@ -51,10 +52,25 @@ export class ShiftRepository {
 
       if (schedulesToPush.length > 0) {
         schedulesToReturn.push(
-          parseArrayOfData(schedulesToPush, [
-            'createdAt',
-            'updatedAt',
-          ]) as ClassScheduleDTO[]
+          parseArrayOfData(
+            schedulesToPush.map((schedule) => {
+              const dayjsStartTime = dayjs(schedule.startTime);
+              const dayjsEndTime = dayjs(schedule.endTime);
+
+              return {
+                ...schedule,
+                startTime: dayjs()
+                  .set('hour', dayjsStartTime.hour())
+                  .set('minute', dayjsStartTime.minute())
+                  .toISOString(),
+                endTime: dayjs()
+                  .set('hour', dayjsEndTime.hour())
+                  .set('minute', dayjsEndTime.minute())
+                  .toISOString(),
+              };
+            }),
+            ['createdAt', 'updatedAt']
+          ) as ClassScheduleDTO[]
         );
       }
     }
