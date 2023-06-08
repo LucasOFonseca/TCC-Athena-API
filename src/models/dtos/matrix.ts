@@ -1,9 +1,15 @@
 import { GenericStatus } from '.';
 
+export interface MatrixModuleDisciplineDTO {
+  guid: string;
+  name: string;
+  workload: number;
+}
+
 export interface MatrixModuleDTO {
   guid?: string;
   name: string;
-  disciplines: string[];
+  disciplines: MatrixModuleDisciplineDTO[];
 }
 
 export interface CreateMatrixDTO {

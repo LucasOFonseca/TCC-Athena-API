@@ -70,7 +70,13 @@ export class Matrix {
           .min(3, ErrorMessages.MSGE08)
           .max(120, ErrorMessages.MSGE09),
         disciplines: z
-          .array(z.string().uuid('Guid inválido'))
+          .array(
+            z.object({
+              guid: z.string().uuid('Guid inválido'),
+              name: z.string({ required_error: ErrorMessages.MSGE01 }),
+              workload: z.number({ required_error: ErrorMessages.MSGE01 }),
+            })
+          )
           .superRefine((disciplines, ctx) => {
             if (disciplines.length < 1) {
               ctx.addIssue({

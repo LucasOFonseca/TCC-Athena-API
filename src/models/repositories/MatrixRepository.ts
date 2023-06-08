@@ -33,11 +33,11 @@ export class MatrixRepository implements IRepository {
 
     matrix.validate();
 
-    const allDisciplines = modules.map((module) => {
-      return module.disciplines;
+    const allDisciplinesGuid = modules.map((module) => {
+      return module.disciplines.map((discipline) => discipline.guid);
     })[0];
     const disciplinesToUse = await this.disciplineRepository.findManyByGuidList(
-      allDisciplines
+      allDisciplinesGuid
     );
     const courseToUse = await this.courseRepository.findByGuid(courseGuid);
 
@@ -73,8 +73,8 @@ export class MatrixRepository implements IRepository {
             .set('millisecond', 0 + index)
             .toDate(),
           disciplines: {
-            connect: module.disciplines.map((discipline) => ({
-              guid: discipline,
+            connect: module.disciplines.map(({ guid }) => ({
+              guid,
             })),
           },
         },
@@ -97,6 +97,8 @@ export class MatrixRepository implements IRepository {
             disciplines: {
               select: {
                 guid: true,
+                name: true,
+                workload: true,
               },
             },
           },
@@ -108,11 +110,13 @@ export class MatrixRepository implements IRepository {
       throw new AppError(ErrorMessages.MSGE05, 404);
     }
 
-    const parsedMatrixModules = matrixToUpdate.matrixModules.map((module) => ({
-      guid: module.guid,
-      name: module.name,
-      disciplines: module.disciplines.map((discipline) => discipline.guid),
-    }));
+    const parsedMatrixModules = matrixToUpdate.matrixModules.map(
+      ({ guid: moduleGuid, name, disciplines }) => ({
+        guid: moduleGuid,
+        name,
+        disciplines,
+      })
+    );
 
     const matrix = new Matrix(
       matrixToUpdate.name,
@@ -160,11 +164,11 @@ export class MatrixRepository implements IRepository {
         (module) => !matrix.modules.some((m) => module.guid === m.guid ?? '')
       );
 
-      const allDisciplines = matrix.modules.map((module) => {
-        return module.disciplines;
+      const allDisciplinesGuid = matrix.modules.map((module) => {
+        return module.disciplines.map((discipline) => discipline.guid);
       })[0];
       const disciplinesToUse =
-        await this.disciplineRepository.findManyByGuidList(allDisciplines);
+        await this.disciplineRepository.findManyByGuidList(allDisciplinesGuid);
 
       if (
         disciplinesToUse.some(
@@ -206,7 +210,7 @@ export class MatrixRepository implements IRepository {
               disciplines: needsToUpdateDisciplines
                 ? {
                     connect: module.disciplines.map((discipline) => ({
-                      guid: discipline,
+                      guid: discipline.guid,
                     })),
                   }
                 : undefined,
@@ -219,7 +223,7 @@ export class MatrixRepository implements IRepository {
               name: module.name,
               disciplines: {
                 connect: module.disciplines.map((discipline) => ({
-                  guid: discipline,
+                  guid: discipline.guid,
                 })),
               },
             },
@@ -248,6 +252,8 @@ export class MatrixRepository implements IRepository {
             disciplines: {
               select: {
                 guid: true,
+                name: true,
+                workload: true,
               },
             },
           },
@@ -267,7 +273,7 @@ export class MatrixRepository implements IRepository {
       modules: updatedMatrix.matrixModules.map((module) => ({
         guid: module.guid,
         name: module.name,
-        disciplines: module.disciplines.map((discipline) => discipline.guid),
+        disciplines: module.disciplines,
       })),
     };
   }
@@ -333,6 +339,8 @@ export class MatrixRepository implements IRepository {
               disciplines: {
                 select: {
                   guid: true,
+                  name: true,
+                  workload: true,
                 },
               },
             },
@@ -348,10 +356,7 @@ export class MatrixRepository implements IRepository {
         name: matrix.name,
         status: matrix.status as GenericStatus,
         courseGuid: matrix.courseGuid,
-        modules: matrix.matrixModules.map((module) => ({
-          ...module,
-          disciplines: module.disciplines.map((discipline) => discipline.guid),
-        })),
+        modules: matrix.matrixModules,
       };
     } catch {
       throw new AppError(ErrorMessages.MSGE05, 404);
