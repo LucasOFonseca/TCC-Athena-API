@@ -2,6 +2,7 @@ import { generatePassword } from '../helpers/utils';
 import { FindAllArgs, IService } from '../interfaces';
 import {
   CreateEmployeeDTO,
+  EmployeeRole,
   GenericStatus,
   UpdateEmployeeDTO,
 } from '../models/dtos';
@@ -36,7 +37,7 @@ export class EmployeeService implements IService {
     });
   }
 
-  async list(args?: FindAllArgs) {
+  async list(args?: FindAllArgs & { role?: EmployeeRole }) {
     const result = await this.employeeRepository.findAll(args);
 
     return result;

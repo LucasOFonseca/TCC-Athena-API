@@ -6,7 +6,7 @@ import { GenericStatus, PaginatedDataResponseDTO } from '../../models/dtos';
 export class PaginatedResponse<T> {
   constructor(private service: IService) {}
 
-  async get(req: Request) {
+  async get(req: Request, extraArgs?: Record<string, string>) {
     if (req.query.page && isNaN(Number(req.query.page))) {
       throw new AppError('A página deve ser um número');
     }
@@ -41,6 +41,7 @@ export class PaginatedResponse<T> {
     const skip = (page - 1) * pageSize;
 
     const { data, totalItems } = await this.service.list({
+      ...extraArgs,
       skip,
       take: pageSize,
       searchTerm: req.query.query as string,

@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { PaginatedResponse } from '../../helpers/utils';
-import { EmployeeDTO } from '../../models/dtos';
+import { AppError, ErrorMessages } from '../../infra/http/errors';
+import { EmployeeDTO, EmployeeRole } from '../../models/dtos';
 import { EmployeeService } from '../../services';
 
 export class ListEmployeesController {
@@ -9,7 +10,14 @@ export class ListEmployeesController {
       new EmployeeService()
     );
 
-    const response = await paginatedResponse.get(req);
+    const role =
+      typeof req.query.role === 'string' ? req.query.role : undefined;
+
+    if (role && !(role in EmployeeRole)) {
+      throw new AppError(ErrorMessages.MSGE06);
+    }
+
+    const response = await paginatedResponse.get(req, { role });
 
     return res.json(response);
   }

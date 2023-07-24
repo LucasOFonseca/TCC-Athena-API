@@ -286,7 +286,7 @@ export class EmployeeRepository implements IRepository {
     return dataToReturn;
   }
 
-  async findAll(args?: FindAllArgs) {
+  async findAll(args?: FindAllArgs & { role?: EmployeeRole }) {
     const where = {
       NOT: args?.itemsToExclude
         ? { guid: { in: args?.itemsToExclude } }
@@ -312,6 +312,13 @@ export class EmployeeRepository implements IRepository {
         : undefined,
       status: {
         equals: args?.filterByStatus,
+      },
+      roles: {
+        some: {
+          role: {
+            in: args?.role,
+          },
+        },
       },
     };
 

@@ -1,4 +1,4 @@
-export const newPasswordEmailTemplate = (
+export const firstAccessEmailTemplate = (
   name: string,
   email: string,
   password: string
@@ -10,11 +10,9 @@ export const newPasswordEmailTemplate = (
   </head>
 
   <body>
-    <h1>Olá ${name.split(' ')[0]}, seus dados de acesso mudaram!</h1>
+    <h1>Olá ${name.split(' ')[0]}, seja bem-vindo(a) ao Athena!</h1>
 
-    <p>
-      Esqueceu sua senha ou não encontrou o e-mail com seus dados de acesso? Por questões de segurança geramos uma nova senha para você.
-    </p>
+    <p>Estas são suas informações de acesso ao sistema:</p>
 
     <p><strong>E-mail:</strong> ${email}</p>
     <p><strong>Senha:</strong> ${password}</p>
