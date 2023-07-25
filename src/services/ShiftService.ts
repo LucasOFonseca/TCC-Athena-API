@@ -16,9 +16,13 @@ export class ShiftService {
     return result;
   }
 
-  async listShiftClassSchedules(shiftGuid: string) {
+  async listShiftClassSchedules(
+    shiftGuid: string,
+    filterByStatus?: GenericStatus
+  ) {
     const schedules = await this.shiftRepository.findShiftClassSchedules(
-      shiftGuid
+      shiftGuid,
+      filterByStatus
     );
 
     return schedules;

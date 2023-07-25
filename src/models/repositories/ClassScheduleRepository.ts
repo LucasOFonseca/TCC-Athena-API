@@ -127,11 +127,12 @@ export class ClassScheduleRepository {
 
       classSchedule.validate();
 
-      if (
+      const needsToVerifyDuplicatesOrOverlapping =
         classSchedule.classNumber !== scheduleToUpdate.classNumber ||
         classSchedule.dayOfWeek !== scheduleToUpdate.dayOfWeek ||
-        classSchedule.shiftGuid !== scheduleToUpdate.shiftGuid
-      ) {
+        classSchedule.shiftGuid !== scheduleToUpdate.shiftGuid;
+
+      if (needsToVerifyDuplicatesOrOverlapping) {
         const existingClassSchedule =
           await prismaClient.classSchedule.findFirst({
             where: {
@@ -143,6 +144,7 @@ export class ClassScheduleRepository {
 
         if (existingClassSchedule) throw new AppError(ErrorMessages.MSGE02);
       }
+
       const classSchedulesInDayOfWeek =
         await prismaClient.classSchedule.findMany({
           where: {
@@ -150,7 +152,10 @@ export class ClassScheduleRepository {
           },
         });
 
-      if (classSchedulesInDayOfWeek.length > 0) {
+      if (
+        classSchedulesInDayOfWeek.length > 0 &&
+        needsToVerifyDuplicatesOrOverlapping
+      ) {
         const dayjsStartTime = dayjs(classSchedule.startTime)
           .set('year', 1970)
           .set('month', 0)

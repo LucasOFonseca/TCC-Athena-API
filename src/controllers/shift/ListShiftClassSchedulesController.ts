@@ -1,4 +1,6 @@
 import { Request, Response } from 'express';
+import { AppError } from '../../infra/http/errors';
+import { GenericStatus } from '../../models/dtos';
 import { ShiftService } from '../../services';
 
 export class ListShiftClassSchedulesController {
@@ -6,7 +8,19 @@ export class ListShiftClassSchedulesController {
     const { shiftGuid } = req.params;
     const shiftService = new ShiftService();
 
-    const result = await shiftService.listShiftClassSchedules(shiftGuid);
+    const filterByStatus =
+      typeof req.query.filterByStatus === 'string'
+        ? req.query.filterByStatus
+        : undefined;
+
+    if (filterByStatus && !(filterByStatus in GenericStatus)) {
+      throw new AppError(`${filterByStatus} não é um status válido`);
+    }
+
+    const result = await shiftService.listShiftClassSchedules(
+      shiftGuid,
+      filterByStatus as GenericStatus
+    );
 
     if (result.length === 0) return res.status(204).send();
 

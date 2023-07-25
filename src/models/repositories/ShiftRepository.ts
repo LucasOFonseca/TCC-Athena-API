@@ -27,19 +27,30 @@ export class ShiftRepository {
     return parseArrayOfData(shifts, ['createdAt', 'updatedAt']);
   }
 
-  async findShiftClassSchedules(shiftGuid: string) {
-    const { ClassSchedules: schedules } = await prismaClient.shift.findUnique({
+  async findShiftClassSchedules(
+    shiftGuid: string,
+    filterByStatus?: GenericStatus
+  ) {
+    const shift = await prismaClient.shift.findFirst({
       where: {
         guid: shiftGuid,
+        status: filterByStatus,
       },
       select: {
         ClassSchedules: {
           orderBy: {
             dayOfWeek: 'asc',
           },
+          where: {
+            status: filterByStatus,
+          },
         },
       },
     });
+
+    if (!shift) return [];
+
+    const { ClassSchedules: schedules } = shift;
 
     if (schedules.length === 0) return [];
 
