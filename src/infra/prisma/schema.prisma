@@ -12,6 +12,14 @@ enum Status {
   inactive
 }
 
+enum PeriodStatus {
+  notStarted
+  openForEnrollment
+  inProgress
+  finished
+  canceled
+}
+
 enum DayOfWeek {
   monday
   tuesday
@@ -36,15 +44,16 @@ enum ShiftValue {
 }
 
 model Discipline {
-  guid          String         @id @default(uuid())
-  status        Status         @default(active)
-  name          String         @unique @db.VarChar(120)
-  syllabus      String         @db.VarChar(500)
-  workload      Int
-  weeklyClasses Int            @default(1) @map("weekly_classes")
-  matrixModules MatrixModule[]
-  createdAt     DateTime       @default(now()) @map("created_at")
-  updatedAt     DateTime       @updatedAt @map("updated_at")
+  guid                String               @id @default(uuid())
+  status              Status               @default(active)
+  name                String               @unique @db.VarChar(120)
+  syllabus            String               @db.VarChar(500)
+  workload            Int
+  weeklyClasses       Int                  @default(1) @map("weekly_classes")
+  matrixModules       MatrixModule[]
+  disciplineSchedules DisciplineSchedule[]
+  createdAt           DateTime             @default(now()) @map("created_at")
+  updatedAt           DateTime             @updatedAt @map("updated_at")
 
   @@map("disciplines")
 }
@@ -66,6 +75,7 @@ model MatrixModule {
   disciplines Discipline[]
   Matrix      Matrix       @relation(fields: [matrixGuid], references: [guid])
   matrixGuid  String       @map("matrix_guid")
+  Period      Period[]
   createdAt   DateTime     @default(now()) @map("created_at")
   updatedAt   DateTime     @updatedAt @map("updated_at")
 
@@ -113,19 +123,20 @@ model Address {
 }
 
 model Employee {
-  guid        String   @id @default(uuid())
-  status      Status   @default(active)
+  guid        String               @id @default(uuid())
+  status      Status               @default(active)
   roles       Role[]
-  name        String   @db.VarChar(120)
-  cpf         String   @unique @db.VarChar(11)
+  name        String               @db.VarChar(120)
+  cpf         String               @unique @db.VarChar(11)
   birthdate   DateTime
-  phoneNumber String   @map("phone_number") @db.VarChar(11)
-  email       String   @unique @db.VarChar(256)
+  phoneNumber String               @map("phone_number") @db.VarChar(11)
+  email       String               @unique @db.VarChar(256)
   password    String
-  address     Address  @relation(fields: [addressGuid], references: [guid])
-  addressGuid String   @unique @map("address_guid")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  address     Address              @relation(fields: [addressGuid], references: [guid])
+  addressGuid String               @unique @map("address_guid")
+  schedules   DisciplineSchedule[]
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @updatedAt @map("updated_at")
 
   @@map("employees")
 }
@@ -152,6 +163,7 @@ model Classroom {
   status    Status   @default(active)
   name      String   @unique @db.VarChar(120)
   capacity  Int
+  periods   Period[]
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -163,6 +175,7 @@ model Shift {
   status         Status          @default(active)
   shift          ShiftValue
   ClassSchedules ClassSchedule[]
+  periods        Period[]
   createdAt      DateTime        @default(now()) @map("created_at")
   updatedAt      DateTime        @updatedAt @map("updated_at")
 
@@ -170,16 +183,54 @@ model Shift {
 }
 
 model ClassSchedule {
-  guid        String    @id @default(uuid())
-  status      Status    @default(active)
-  classNumber Int       @map("class_number")
-  dayOfWeek   DayOfWeek @map("day_of_week")
-  shift       Shift     @relation(fields: [shiftGuid], references: [guid])
-  shiftGuid   String    @map("shift_guid")
-  startTime   DateTime  @map("start_time") @db.Time()
-  endTime     DateTime  @map("end_time") @db.Time()
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
+  guid                   String              @id @default(uuid())
+  status                 Status              @default(active)
+  classNumber            Int                 @map("class_number")
+  dayOfWeek              DayOfWeek           @map("day_of_week")
+  shift                  Shift               @relation(fields: [shiftGuid], references: [guid])
+  shiftGuid              String              @map("shift_guid")
+  startTime              DateTime            @map("start_time") @db.Time()
+  endTime                DateTime            @map("end_time") @db.Time()
+  disciplineSchedule     DisciplineSchedule? @relation(fields: [disciplineScheduleGuid], references: [guid])
+  disciplineScheduleGuid String?             @map("discipline_schedule_guid")
+  createdAt              DateTime            @default(now()) @map("created_at")
+  updatedAt              DateTime            @updatedAt @map("updated_at")
 
   @@map("class_schedules")
+}
+
+model DisciplineSchedule {
+  guid           String          @id @default(uuid())
+  educator       Employee        @relation(fields: [employeeGuid], references: [guid])
+  employeeGuid   String          @map("employee_guid")
+  period         Period          @relation(fields: [periodGuid], references: [guid])
+  periodGuid     String          @map("period_guid")
+  Discipline     Discipline      @relation(fields: [disciplineGuid], references: [guid])
+  disciplineGuid String          @map("discipline_guid")
+  schedules      ClassSchedule[]
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+
+  @@map("discipline_schedules")
+}
+
+model Period {
+  guid                String               @id @default(uuid())
+  status              PeriodStatus         @default(notStarted)
+  enrollmentStartDate DateTime             @map("enrollment_start_date")
+  enrollmentEndDate   DateTime             @map("enrollment_end_date")
+  deadline            DateTime
+  vacancies           Int
+  matrixModule        MatrixModule         @relation(fields: [matrixModuleGuid], references: [guid])
+  matrixModuleGuid    String               @map("matrix_module_guid")
+  classId             String               @map("class_id")
+  classroom           Classroom            @relation(fields: [classroomGuid], references: [guid])
+  classroomGuid       String               @map("classroom_guid")
+  shift               Shift                @relation(fields: [shiftGuid], references: [guid])
+  shiftGuid           String               @map("shift_guid")
+  disciplinesSchedule DisciplineSchedule[]
+  createdAt           DateTime             @default(now()) @map("created_at")
+  updatedAt           DateTime             @updatedAt @map("updated_at")
+
+  @@map("periods")
 }
