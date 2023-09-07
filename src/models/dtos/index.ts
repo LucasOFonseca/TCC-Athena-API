@@ -8,6 +8,8 @@ export * from './employee';
 export * from './employeeRole';
 export * from './matrix';
 export * from './paginatedData';
+export * from './period';
+export * from './periodStatus';
 export * from './shift';
 export * from './status';
 export * from './student';

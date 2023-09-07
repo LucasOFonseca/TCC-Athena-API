@@ -4,5 +4,6 @@ export * from './CourseRepository';
 export * from './DisciplineRepository';
 export * from './EmployeeRepository';
 export * from './MatrixRepository';
+export * from './PeriodRepository';
 export * from './ShiftRepository';
 export * from './StudentRepository';

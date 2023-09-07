@@ -11,6 +11,7 @@ import { courseRoutes } from './course.routes';
 import { disciplineRoutes } from './discipline.routes';
 import { employeeRoutes } from './employee.routes';
 import { matrixRoutes } from './matrix.routes';
+import { periodRoutes } from './period.routes';
 import { shiftRoutes } from './shift.routes';
 import { studentRoutes } from './student.routes';
 
@@ -21,6 +22,7 @@ router.use('/course', ensureAuthenticated, ensureManager, courseRoutes);
 router.use('/classroom', ensureAuthenticated, ensureManager, classroomRoutes);
 router.use('/student', ensureAuthenticated, ensureManager, studentRoutes);
 router.use('/shift', ensureAuthenticated, ensureManager, shiftRoutes);
+router.use('/period', ensureAuthenticated, ensureManager, periodRoutes);
 router.use(
   '/class-schedule',
   ensureAuthenticated,

@@ -5,5 +5,6 @@ export * from './CourseService';
 export * from './DisciplineService';
 export * from './EmployeeService';
 export * from './MatrixService';
+export * from './PeriodService';
 export * from './ShiftService';
 export * from './StudentService';

@@ -8,7 +8,7 @@ export interface CreateClassScheduleDTO {
   endTime: string;
 }
 
-export interface ClassScheduleDTO {
+export interface ClassScheduleDTO extends CreateClassScheduleDTO {
   guid: string;
   status: GenericStatus;
 }
