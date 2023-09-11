@@ -1,16 +1,19 @@
 import { Router } from 'express';
-import { CreatePeriodController } from '../../../controllers/period';
+import {
+  CreatePeriodController,
+  UpdatePeriodController,
+} from '../../../controllers/period';
 
 const periodRoutes = Router();
 
 const createPeriodController = new CreatePeriodController();
 // const listPeriodsController = new ListPeriodsController();
-// const updatePeriodController = new UpdatePeriodController();
+const updatePeriodController = new UpdatePeriodController();
 // const changePeriodStatusController = new ChangePeriodStatusController();
 
 periodRoutes.post('/', createPeriodController.handle);
 // periodRoutes.get('/', listClassroomsController.handle);
-// periodRoutes.put('/:guid', updateClassroomController.handle);
+periodRoutes.put('/:guid', updatePeriodController.handle);
 // periodRoutes.patch('/:guid', changeClassroomStatusController.handle);
 
 export { periodRoutes };

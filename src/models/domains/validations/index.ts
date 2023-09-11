@@ -1,1 +1,1 @@
-export * from './checkScheduleAvailability';
+export * from './PeriodValidator';

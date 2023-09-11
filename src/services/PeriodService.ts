@@ -3,7 +3,7 @@ import {
   CreatePeriodDTO,
   EmployeeRole,
   GenericStatus,
-  UpdateEmployeeDTO,
+  UpdatePeriodDTO,
 } from '../models/dtos';
 import { PeriodRepository } from '../models/repositories';
 
@@ -11,15 +11,15 @@ export class PeriodService implements IService {
   private periodRepository = new PeriodRepository();
 
   async create(data: CreatePeriodDTO) {
-    const employee = await this.periodRepository.create(data);
+    const period = await this.periodRepository.create(data);
 
-    return employee;
+    return period;
   }
 
-  async update(guid: string, data: UpdateEmployeeDTO) {
-    const updatedEmployee = await this.periodRepository.update(guid, data);
+  async update(guid: string, data: UpdatePeriodDTO) {
+    const updatedPeriod = await this.periodRepository.update(guid, data);
 
-    return updatedEmployee;
+    return updatedPeriod;
   }
 
   async changeStatus(guid: string, status: GenericStatus) {

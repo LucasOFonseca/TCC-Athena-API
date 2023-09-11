@@ -2,6 +2,7 @@ import cors from 'cors';
 import 'dotenv/config';
 import express, { NextFunction, Request, Response } from 'express';
 import 'express-async-errors';
+import { updatePeriodStatusTask } from '../../tasks';
 import { AppError } from './errors';
 import { router } from './routes';
 
@@ -25,6 +26,8 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
     message: `Internal server error - ${err.message}`,
   });
 });
+
+updatePeriodStatusTask.start();
 
 app.listen(process.env.PORT, () => {
   console.log(

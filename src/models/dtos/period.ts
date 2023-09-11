@@ -1,6 +1,7 @@
 import { ClassScheduleDTO, PeriodStatus } from '.';
 
 export interface DisciplineScheduleDTO {
+  guid?: string;
   employeeGuid: string;
   disciplineGuid: string;
   schedules: ClassScheduleDTO[];
@@ -28,7 +29,6 @@ export interface UpdatePeriodDTO {
   vacancies?: number;
   classroomGuid?: string;
   shiftGuid?: string;
-  matrixModuleGuid?: string;
   classId?: string;
   disciplinesSchedule?: DisciplineScheduleDTO[];
 }

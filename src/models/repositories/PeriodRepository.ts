@@ -1,20 +1,57 @@
+/* eslint-disable no-restricted-syntax */
 import { PeriodStatus as PrismaPeriodStatus } from '@prisma/client';
+import dayjs from 'dayjs';
 import { excludeFields, parseArrayOfData } from '../../helpers/utils';
 import { AppError, ErrorMessages } from '../../infra/http/errors';
 import { prismaClient } from '../../infra/prisma';
 import { FindAllArgs, IRepository } from '../../interfaces';
 import { ClassSchedule, DisciplineSchedule, Period } from '../domains';
-import { checkScheduleAvailability } from '../domains/validations';
+import { PeriodValidator } from '../domains/validations';
 import {
   CreatePeriodDTO,
+  DisciplineDTO,
   DisciplineScheduleDTO,
-  EmployeeRole,
   GenericStatus,
   PeriodStatus,
   UpdatePeriodDTO,
 } from '../dtos';
 
 export class PeriodRepository implements IRepository {
+  private validator = new PeriodValidator();
+
+  private createDisciplinesScheduleFromDTO(
+    disciplinesScheduleDTO: DisciplineScheduleDTO[]
+  ) {
+    return disciplinesScheduleDTO?.map((disciplineScheduleData) => {
+      const schedules = disciplineScheduleData.schedules.map((schedule) => {
+        const newSchedule = new ClassSchedule(
+          schedule.shiftGuid,
+          schedule.dayOfWeek,
+          schedule.classNumber,
+          schedule.startTime,
+          schedule.endTime,
+          schedule.guid,
+          schedule.status
+        );
+
+        newSchedule.validate();
+
+        return newSchedule;
+      });
+
+      const newDisciplineSchedule = new DisciplineSchedule(
+        disciplineScheduleData.employeeGuid,
+        disciplineScheduleData.disciplineGuid,
+        schedules,
+        disciplineScheduleData.guid
+      );
+
+      newDisciplineSchedule.validate();
+
+      return newDisciplineSchedule;
+    });
+  }
+
   async create({
     status,
     classId,
@@ -28,45 +65,15 @@ export class PeriodRepository implements IRepository {
     vacancies,
   }: CreatePeriodDTO) {
     if (classId && matrixModuleGuid) {
-      const existingPeriod = await prismaClient.period.findFirst({
-        where: { classId, matrixModuleGuid },
-      });
-
-      if (existingPeriod) throw new AppError(ErrorMessages.MSGE02);
+      await this.validator.checkIfPeriodExists(classId, matrixModuleGuid);
     }
 
     if (status !== PeriodStatus.draft && !disciplinesScheduleData) {
       throw new AppError(ErrorMessages.MSGE01);
     }
 
-    const disciplinesSchedule = disciplinesScheduleData?.map(
-      (disciplineScheduleData) => {
-        const schedules = disciplineScheduleData.schedules.map((schedule) => {
-          const newSchedule = new ClassSchedule(
-            schedule.shiftGuid,
-            schedule.dayOfWeek,
-            schedule.classNumber,
-            schedule.startTime,
-            schedule.endTime,
-            schedule.guid,
-            schedule.status
-          );
-
-          newSchedule.validate();
-
-          return newSchedule;
-        });
-
-        const newDisciplineSchedule = new DisciplineSchedule(
-          disciplineScheduleData.employeeGuid,
-          disciplineScheduleData.disciplineGuid,
-          schedules
-        );
-
-        newDisciplineSchedule.validate();
-
-        return newDisciplineSchedule;
-      }
+    const disciplinesSchedule = this.createDisciplinesScheduleFromDTO(
+      disciplinesScheduleData
     );
 
     const period = new Period(
@@ -84,53 +91,17 @@ export class PeriodRepository implements IRepository {
 
     period.validate();
 
-    if (classroomGuid) {
-      const selectedClassroom = await prismaClient.classroom.findUnique({
-        where: { guid: classroomGuid },
-        include: {
-          disciplinesSchedule: {
-            include: {
-              schedules: true,
-            },
-            where: {
-              schedules: {
-                some: {
-                  shiftGuid,
-                },
-              },
-            },
-          },
-        },
-      });
-
-      if (!selectedClassroom) throw new AppError(ErrorMessages.MSGE05, 404);
-
-      if (selectedClassroom.status === GenericStatus.inactive)
-        throw new AppError(ErrorMessages.MSGE16, 404);
-
-      if (selectedClassroom.capacity < vacancies)
-        throw new AppError(ErrorMessages.MSGE06);
-
-      if (
-        selectedClassroom.disciplinesSchedule.length !== 0 &&
-        disciplinesSchedule
-      ) {
-        const isClassroomAvailable = checkScheduleAvailability(
-          selectedClassroom.disciplinesSchedule as unknown as DisciplineScheduleDTO[],
-          disciplinesSchedule
-        );
-
-        if (!isClassroomAvailable) throw new AppError(ErrorMessages.MSGE16);
-      }
+    if (shiftGuid) {
+      this.validator.checkShiftAvailability(shiftGuid);
     }
 
-    if (shiftGuid) {
-      const selectedShift = await prismaClient.shift.findUnique({
-        where: { guid: shiftGuid },
-      });
-
-      if (selectedShift.status === GenericStatus.inactive)
-        throw new AppError(ErrorMessages.MSGE16, 404);
+    if (classroomGuid) {
+      await this.validator.checkClassroomAvailability(
+        classroomGuid,
+        shiftGuid,
+        vacancies,
+        disciplinesSchedule
+      );
     }
 
     const selectedMatrixModule = await prismaClient.matrixModule.findUnique({
@@ -152,76 +123,11 @@ export class PeriodRepository implements IRepository {
       throw new AppError(ErrorMessages.MSGE16, 404);
 
     if (disciplinesScheduleData) {
-      const isDisciplinesScheduleValid =
-        selectedMatrixModule.disciplines.every((discipline) => {
-          const isNotDuplicated =
-            disciplinesSchedule.filter(
-              (disciplineSchedule) =>
-                discipline.guid === disciplineSchedule.disciplineGuid
-            ).length === 1;
-
-          const disciplineSchedule = disciplinesSchedule.find(
-            (schedule) => schedule.disciplineGuid === discipline.guid
-          );
-
-          if (!disciplineSchedule) return false;
-
-          const hasEnoughClasses =
-            disciplineSchedule.schedules.length === discipline.weeklyClasses;
-
-          return isNotDuplicated && hasEnoughClasses;
-        }) &&
-        disciplinesSchedule.length === selectedMatrixModule.disciplines.length;
-
-      const hasSchedulesWithWrongShift = disciplinesSchedule.some(
-        ({ schedules }) => schedules.some((s) => s.shiftGuid !== shiftGuid)
+      await this.validator.validateDisciplinesSchedule(
+        selectedMatrixModule.disciplines as unknown as DisciplineDTO[],
+        disciplinesSchedule,
+        shiftGuid
       );
-
-      if (!isDisciplinesScheduleValid || hasSchedulesWithWrongShift)
-        throw new AppError(ErrorMessages.MSGE06);
-
-      const allSelectedEmployeesGuidList = disciplinesSchedule
-        .map(({ employeeGuid }) => employeeGuid)
-        .filter((guid, index, array) => array.indexOf(guid) === index);
-
-      // eslint-disable-next-line no-restricted-syntax
-      for await (const employeeGuid of allSelectedEmployeesGuidList) {
-        const employee = await prismaClient.employee.findUnique({
-          where: { guid: employeeGuid },
-          include: {
-            roles: {
-              select: {
-                role: true,
-              },
-            },
-            disciplinesSchedule: {
-              include: {
-                schedules: true,
-              },
-            },
-          },
-        });
-
-        if (!employee) throw new AppError(ErrorMessages.MSGE05, 404);
-
-        if (employee.status === GenericStatus.inactive)
-          throw new AppError(ErrorMessages.MSGE16, 404);
-
-        if (
-          !employee.roles.some((role) => role.role === EmployeeRole.educator)
-        ) {
-          throw new AppError(ErrorMessages.MSGE06);
-        }
-
-        if (employee.disciplinesSchedule.length > 0) {
-          const isEmployeeAvailable = checkScheduleAvailability(
-            employee.disciplinesSchedule as unknown as DisciplineScheduleDTO[],
-            disciplinesSchedule
-          );
-
-          if (!isEmployeeAvailable) throw new AppError(ErrorMessages.MSGE16);
-        }
-      }
     }
 
     const createdPeriod = await prismaClient.period.create({
@@ -241,7 +147,6 @@ export class PeriodRepository implements IRepository {
     const createdDisciplinesSchedule = [];
 
     if (disciplinesSchedule) {
-      // eslint-disable-next-line no-restricted-syntax
       for await (const schedule of disciplinesSchedule) {
         const createdSchedule = await prismaClient.disciplineSchedule.create({
           data: {
@@ -267,7 +172,7 @@ export class PeriodRepository implements IRepository {
     return excludeFields(
       {
         ...createdPeriod,
-        disciplineSchedules: parseArrayOfData(
+        disciplinesSchedule: parseArrayOfData(
           createdDisciplinesSchedule.map((s) => ({
             ...s,
             schedules: parseArrayOfData(s.schedules, [
@@ -285,9 +190,306 @@ export class PeriodRepository implements IRepository {
   async update(guid: string, data: UpdatePeriodDTO) {
     const periodToUpdate = await prismaClient.period.findUnique({
       where: { guid },
+      include: {
+        disciplinesSchedule: {
+          include: {
+            schedules: true,
+          },
+        },
+        matrixModule: {
+          include: {
+            disciplines: true,
+          },
+        },
+      },
     });
 
     if (!periodToUpdate) throw new AppError(ErrorMessages.MSGE05, 404);
+
+    const disciplinesSchedule = this.createDisciplinesScheduleFromDTO(
+      periodToUpdate.disciplinesSchedule.map((disciplineSchedule) => ({
+        ...disciplineSchedule,
+        schedules: disciplineSchedule.schedules.map((s) => ({
+          ...s,
+          startTime: s.startTime.toISOString(),
+          endTime: s.endTime.toISOString(),
+        })),
+      })) as DisciplineScheduleDTO[]
+    );
+
+    const period = new Period(
+      periodToUpdate.matrixModuleGuid,
+      periodToUpdate.enrollmentStartDate?.toISOString(),
+      periodToUpdate.enrollmentEndDate?.toISOString(),
+      periodToUpdate.deadline?.toISOString(),
+      periodToUpdate.vacancies,
+      periodToUpdate.classroomGuid,
+      periodToUpdate.shiftGuid,
+      periodToUpdate.classId,
+      disciplinesSchedule,
+      periodToUpdate.status as PeriodStatus,
+      periodToUpdate.guid
+    );
+
+    if (data.enrollmentStartDate !== undefined)
+      period.enrollmentStartDate = data.enrollmentStartDate;
+    if (data.enrollmentEndDate !== undefined)
+      period.enrollmentEndDate = data.enrollmentEndDate;
+    if (data.deadline !== undefined) period.deadline = data.deadline;
+    if (data.vacancies !== undefined) period.vacancies = data.vacancies;
+    if (data.classroomGuid !== undefined)
+      period.classroomGuid = data.classroomGuid;
+    if (data.shiftGuid !== undefined) period.shiftGuid = data.shiftGuid;
+    if (data.classId !== undefined) period.classId = data.classId;
+    if (data.disciplinesSchedule !== undefined)
+      period.disciplinesSchedule = this.createDisciplinesScheduleFromDTO(
+        data.disciplinesSchedule
+      );
+    if (data.status !== undefined) period.status = data.status;
+
+    period.validate();
+
+    if (
+      period.status !== PeriodStatus.draft &&
+      period.enrollmentStartDate !==
+        periodToUpdate.enrollmentStartDate.toISOString() &&
+      (dayjs(periodToUpdate.enrollmentStartDate).isBefore(new Date(), 'day') ||
+        dayjs(periodToUpdate.enrollmentStartDate).isSame(new Date(), 'day'))
+    ) {
+      throw new AppError(ErrorMessages.MSGE06);
+    }
+
+    if (
+      period.status !== PeriodStatus.draft &&
+      period.enrollmentEndDate !==
+        periodToUpdate.enrollmentEndDate.toISOString() &&
+      (dayjs(periodToUpdate.enrollmentEndDate).isBefore(new Date(), 'day') ||
+        dayjs(periodToUpdate.enrollmentEndDate).isSame(new Date(), 'day'))
+    ) {
+      throw new AppError(ErrorMessages.MSGE06);
+    }
+
+    if (period.classId !== periodToUpdate.classId) {
+      await this.validator.checkIfPeriodExists(
+        period.classId,
+        period.matrixModuleGuid
+      );
+    }
+
+    if (
+      period.classroomGuid !== periodToUpdate.classroomGuid ||
+      period.shiftGuid !== periodToUpdate.shiftGuid ||
+      period.vacancies !== periodToUpdate.vacancies ||
+      JSON.stringify(period.disciplinesSchedule) !==
+        JSON.stringify(disciplinesSchedule)
+    ) {
+      if (period.shiftGuid !== periodToUpdate.shiftGuid) {
+        await this.validator.checkShiftAvailability(period.shiftGuid);
+      }
+
+      await this.validator.checkClassroomAvailability(
+        period.classroomGuid,
+        period.shiftGuid,
+        period.vacancies,
+        disciplinesSchedule
+      );
+    }
+
+    if (
+      JSON.stringify(period.disciplinesSchedule) !==
+      JSON.stringify(disciplinesSchedule)
+    ) {
+      if (
+        period.disciplinesSchedule.filter(
+          (schedule, index, array) => array.indexOf(schedule) === index
+        ).length !== period.disciplinesSchedule.length
+      ) {
+        throw new AppError(ErrorMessages.MSGE15);
+      }
+
+      const disciplinesScheduleToDelete = disciplinesSchedule.filter(
+        (schedule) =>
+          !period.disciplinesSchedule.some((s) => s.guid === schedule.guid)
+      );
+      const disciplinesScheduleToCreate = period.disciplinesSchedule.filter(
+        (schedule) => !schedule.guid
+      );
+      const disciplinesScheduleToUpdate = period.disciplinesSchedule
+        .filter((schedule) => schedule.guid !== undefined)
+        .filter((schedule) => {
+          const currentSchedule = disciplinesSchedule.find(
+            (s) => s.guid === schedule.guid
+          );
+
+          if (!currentSchedule) return false;
+
+          if (JSON.stringify(schedule) !== JSON.stringify(currentSchedule))
+            return true;
+
+          return false;
+        });
+
+      if (disciplinesScheduleToDelete.length > 0) {
+        await prismaClient.disciplineSchedule.deleteMany({
+          where: {
+            guid: {
+              in: disciplinesScheduleToDelete.map((s) => s.guid),
+            },
+          },
+        });
+      }
+
+      if (disciplinesScheduleToCreate.length > 0) {
+        const isDisciplinesScheduleValid = disciplinesScheduleToCreate.every(
+          (schedule) => {
+            const discipline = periodToUpdate.matrixModule.disciplines.find(
+              (d) => schedule.disciplineGuid === d.guid
+            );
+
+            if (!discipline) return false;
+
+            const hasEnoughClasses =
+              schedule.schedules.length === discipline.weeklyClasses;
+
+            return hasEnoughClasses;
+          }
+        );
+
+        const hasSchedulesWithWrongShift = disciplinesSchedule.some(
+          ({ schedules }) =>
+            schedules.some((s) => s.shiftGuid !== period.shiftGuid)
+        );
+
+        if (!isDisciplinesScheduleValid || hasSchedulesWithWrongShift)
+          throw new AppError(ErrorMessages.MSGE06);
+
+        const allSelectedEmployeesGuidList = disciplinesScheduleToCreate
+          .map(({ employeeGuid }) => employeeGuid)
+          .filter(
+            (employeeGuid, index, array) =>
+              array.indexOf(employeeGuid) === index
+          );
+
+        for await (const employeeGuid of allSelectedEmployeesGuidList) {
+          await this.validator.checkEmployeeAvailability(
+            employeeGuid,
+            disciplinesSchedule
+          );
+        }
+
+        for await (const schedule of disciplinesScheduleToCreate) {
+          await prismaClient.disciplineSchedule.create({
+            data: {
+              periodGuid: period.guid,
+              classroomGuid: period.classroomGuid,
+              disciplineGuid: schedule.disciplineGuid,
+              employeeGuid: schedule.employeeGuid,
+              schedules: {
+                connect: schedule.schedules.map((s) => ({
+                  guid: s.guid,
+                })),
+              },
+            },
+          });
+        }
+      }
+
+      if (disciplinesScheduleToUpdate.length > 0) {
+        const isDisciplinesScheduleValid = disciplinesScheduleToCreate.every(
+          (schedule) => {
+            const discipline = periodToUpdate.matrixModule.disciplines.find(
+              (d) => schedule.disciplineGuid === d.guid
+            );
+
+            if (!discipline) return false;
+
+            const hasEnoughClasses =
+              schedule.schedules.length === discipline.weeklyClasses;
+
+            return hasEnoughClasses;
+          }
+        );
+
+        const hasSchedulesWithWrongShift = disciplinesSchedule.some(
+          ({ schedules }) =>
+            schedules.some((s) => s.shiftGuid !== period.shiftGuid)
+        );
+
+        if (!isDisciplinesScheduleValid || hasSchedulesWithWrongShift)
+          throw new AppError(ErrorMessages.MSGE06);
+
+        for await (const schedule of disciplinesScheduleToUpdate) {
+          const currentSchedule = disciplinesSchedule.find(
+            (s) => s.guid === schedule.guid
+          );
+
+          if (schedule.employeeGuid !== currentSchedule.employeeGuid) {
+            await this.validator.checkEmployeeAvailability(
+              schedule.employeeGuid,
+              disciplinesScheduleToUpdate
+            );
+          }
+        }
+
+        for await (const schedule of disciplinesScheduleToUpdate) {
+          await prismaClient.disciplineSchedule.update({
+            where: {
+              guid: schedule.guid,
+            },
+            data: {
+              periodGuid: period.guid,
+              classroomGuid: period.classroomGuid,
+              disciplineGuid: schedule.disciplineGuid,
+              employeeGuid: schedule.employeeGuid,
+              schedules: {
+                set: schedule.schedules.map((s) => ({
+                  guid: s.guid,
+                })),
+              },
+            },
+          });
+        }
+      }
+    }
+
+    const updatedPeriod = await prismaClient.period.update({
+      where: { guid },
+      data: {
+        status: period.status as PrismaPeriodStatus,
+        classId: period.classId,
+        deadline: period.deadline,
+        enrollmentEndDate: period.enrollmentEndDate,
+        enrollmentStartDate: period.enrollmentStartDate,
+        matrixModuleGuid: period.matrixModuleGuid,
+        vacancies: period.vacancies,
+        classroomGuid: period.classroomGuid,
+        shiftGuid: period.shiftGuid,
+      },
+      include: {
+        disciplinesSchedule: {
+          include: {
+            schedules: true,
+          },
+        },
+      },
+    });
+
+    return excludeFields(
+      {
+        ...updatedPeriod,
+        disciplinesSchedule: parseArrayOfData(
+          updatedPeriod.disciplinesSchedule.map((s) => ({
+            ...s,
+            schedules: parseArrayOfData(s.schedules, [
+              'createdAt',
+              'updatedAt',
+            ]),
+          })),
+          ['createdAt', 'updatedAt']
+        ),
+      },
+      ['createdAt', 'updatedAt']
+    );
   }
 
   async findAll(args?: FindAllArgs) {
