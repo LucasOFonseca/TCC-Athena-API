@@ -16,6 +16,11 @@ import {
   UpdatePeriodDTO,
 } from '../dtos';
 
+export interface FindAllPeriodsArgs
+  extends Omit<FindAllArgs, 'filterByStatus'> {
+  filterByStatus?: PeriodStatus;
+}
+
 export class PeriodRepository implements IRepository {
   private validator = new PeriodValidator();
 
@@ -492,10 +497,112 @@ export class PeriodRepository implements IRepository {
     );
   }
 
-  async findAll(args?: FindAllArgs) {
+  async findAll(args?: FindAllPeriodsArgs) {
+    const where = {
+      OR: args?.searchTerm
+        ? [
+            {
+              matrixModule: {
+                Matrix: {
+                  course: {
+                    name: {
+                      contains: args?.searchTerm,
+                    },
+                  },
+                },
+              },
+            },
+            {
+              matrixModule: {
+                Matrix: {
+                  name: {
+                    contains: args?.searchTerm,
+                  },
+                },
+              },
+            },
+            {
+              matrixModule: {
+                name: {
+                  contains: args?.searchTerm,
+                },
+              },
+            },
+            {
+              classId: {
+                contains: args?.searchTerm,
+              },
+            },
+          ]
+        : undefined,
+      status: {
+        equals: args?.filterByStatus,
+      },
+    };
+
+    const totalItems = await prismaClient.period.count({ where });
+
+    const data = await prismaClient.period.findMany({
+      where,
+      include: {
+        disciplinesSchedule: {
+          include: {
+            schedules: true,
+            Discipline: {
+              select: {
+                name: true,
+              },
+            },
+            educator: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+        matrixModule: {
+          select: {
+            name: true,
+            Matrix: {
+              select: {
+                name: true,
+                course: {
+                  select: {
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      skip: args?.skip,
+      take: args?.take,
+    });
+
     return {
-      data: [],
-      totalItems: 0,
+      data: data.map(
+        ({ guid, status, matrixModule, classId, disciplinesSchedule }) => ({
+          guid,
+          status: status as PeriodStatus,
+          name: `${matrixModule.Matrix.course.name}/${
+            matrixModule.Matrix.name
+          } - ${matrixModule.name}${classId ? ` (Turma ${classId})` : ''}`,
+          disciplinesSchedule: disciplinesSchedule.map(
+            (disciplineSchedule) => ({
+              guid: disciplineSchedule.guid,
+              name: disciplineSchedule.Discipline.name,
+              educator: disciplineSchedule.educator.name,
+              schedules: parseArrayOfData(disciplineSchedule.schedules, [
+                'createdAt',
+                'updatedAt',
+              ]),
+            })
+          ),
+        })
+      ),
+      totalItems,
     };
   }
 

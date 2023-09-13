@@ -29,13 +29,6 @@ export class PaginatedResponse<T> {
       );
     }
 
-    if (
-      typeof req.query.filterByStatus === 'string' &&
-      !(req.query.filterByStatus in GenericStatus)
-    ) {
-      throw new AppError(`${req.query.filterByStatus} não é um status válido`);
-    }
-
     const pageSize = req.query.pageSize ? Number(req.query.pageSize) : 10;
     const page = req.query.page ? Number(req.query.page) : 1;
     const skip = (page - 1) * pageSize;

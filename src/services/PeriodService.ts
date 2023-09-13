@@ -1,11 +1,10 @@
-import { FindAllArgs, IService } from '../interfaces';
+import { IService } from '../interfaces';
 import {
   CreatePeriodDTO,
-  EmployeeRole,
   GenericStatus,
   UpdatePeriodDTO,
 } from '../models/dtos';
-import { PeriodRepository } from '../models/repositories';
+import { FindAllPeriodsArgs, PeriodRepository } from '../models/repositories';
 
 export class PeriodService implements IService {
   private periodRepository = new PeriodRepository();
@@ -30,7 +29,7 @@ export class PeriodService implements IService {
     return updatedEmployee;
   }
 
-  async list(args?: FindAllArgs & { role?: EmployeeRole }) {
+  async list(args?: FindAllPeriodsArgs) {
     const result = await this.periodRepository.findAll(args);
 
     return result;

@@ -16,5 +16,5 @@ export type FindAllReturn = {
 export interface IRepository {
   create(data: unknown): Promise<unknown>;
   update(guid: string, data: unknown): Promise<unknown>;
-  findAll(args?: FindAllArgs): Promise<FindAllReturn>;
+  findAll(args?: FindAllArgs | unknown): Promise<FindAllReturn>;
 }

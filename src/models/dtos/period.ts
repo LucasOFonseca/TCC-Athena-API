@@ -32,3 +32,18 @@ export interface UpdatePeriodDTO {
   classId?: string;
   disciplinesSchedule?: DisciplineScheduleDTO[];
 }
+
+export interface SimplifiedDisciplineScheduleDTO {
+  guid: string;
+  name: string;
+  educator: string;
+  schedules: ClassScheduleDTO[];
+}
+
+export interface SimplifiedPeriodDTO {
+  guid: string;
+  status: PeriodStatus;
+  name: string;
+  enrollmentStartDate?: string;
+  disciplinesSchedule?: SimplifiedDisciplineScheduleDTO[];
+}

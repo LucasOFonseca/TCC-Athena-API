@@ -12,12 +12,12 @@ export const updatePeriodStatusTask = cron.schedule(
           status: PeriodStatus.draft,
         },
         enrollmentStartDate: {
-          gte: dayjs()
+          lte: dayjs()
             .set('hour', 0)
             .set('minute', 0)
             .set('second', 0)
             .toISOString(),
-          lte: dayjs()
+          gte: dayjs()
             .set('hour', 23)
             .set('minute', 59)
             .set('second', 59)
@@ -32,12 +32,12 @@ export const updatePeriodStatusTask = cron.schedule(
           status: PeriodStatus.draft,
         },
         enrollmentEndDate: {
-          gte: dayjs()
+          lte: dayjs()
             .set('hour', 0)
             .set('minute', 0)
             .set('second', 0)
             .toISOString(),
-          lte: dayjs()
+          gte: dayjs()
             .set('hour', 23)
             .set('minute', 59)
             .set('second', 59)
@@ -51,13 +51,13 @@ export const updatePeriodStatusTask = cron.schedule(
         NOT: {
           status: PeriodStatus.draft,
         },
-        enrollmentEndDate: {
-          gte: dayjs()
+        deadline: {
+          lte: dayjs()
             .set('hour', 0)
             .set('minute', 0)
             .set('second', 0)
             .toISOString(),
-          lte: dayjs()
+          gte: dayjs()
             .set('hour', 23)
             .set('minute', 59)
             .set('second', 59)
