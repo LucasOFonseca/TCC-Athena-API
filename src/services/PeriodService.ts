@@ -1,9 +1,5 @@
 import { IService } from '../interfaces';
-import {
-  CreatePeriodDTO,
-  GenericStatus,
-  UpdatePeriodDTO,
-} from '../models/dtos';
+import { CreatePeriodDTO, PeriodStatus, UpdatePeriodDTO } from '../models/dtos';
 import { FindAllPeriodsArgs, PeriodRepository } from '../models/repositories';
 
 export class PeriodService implements IService {
@@ -21,17 +17,23 @@ export class PeriodService implements IService {
     return updatedPeriod;
   }
 
-  async changeStatus(guid: string, status: GenericStatus) {
-    const updatedEmployee = await this.periodRepository.update(guid, {
-      status,
+  async changeStatus(guid: string) {
+    const updatedPeriod = await this.periodRepository.update(guid, {
+      status: PeriodStatus.canceled,
     });
 
-    return updatedEmployee;
+    return updatedPeriod;
   }
 
   async list(args?: FindAllPeriodsArgs) {
     const result = await this.periodRepository.findAll(args);
 
     return result;
+  }
+
+  async findByGuid(guid: string) {
+    const period = await this.periodRepository.findByGuid(guid);
+
+    return period;
   }
 }

@@ -1,10 +1,8 @@
-import { GenericStatus } from '../models/dtos';
-
 export type FindAllArgs = {
   skip?: number;
   take?: number;
   searchTerm?: string;
-  filterByStatus?: GenericStatus;
+  filterByStatus?: string;
   itemsToExclude?: string[];
 };
 

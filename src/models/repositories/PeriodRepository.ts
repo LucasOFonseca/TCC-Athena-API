@@ -606,7 +606,35 @@ export class PeriodRepository implements IRepository {
     };
   }
 
-  async findByGuid(guid: string): Promise<void> {
-    throw new Error('Method not implemented.');
+  async findByGuid(guid: string) {
+    const period = await prismaClient.period.findUnique({
+      where: { guid },
+      include: {
+        disciplinesSchedule: {
+          include: {
+            schedules: true,
+          },
+        },
+      },
+    });
+
+    if (!period) throw new AppError(ErrorMessages.MSGE05, 404);
+
+    return excludeFields(
+      {
+        ...period,
+        disciplinesSchedule: parseArrayOfData(
+          period.disciplinesSchedule.map((disciplineSchedule) => ({
+            ...disciplineSchedule,
+            schedules: parseArrayOfData(disciplineSchedule.schedules, [
+              'createdAt',
+              'updatedAt',
+            ]),
+          })),
+          ['createdAt', 'updatedAt']
+        ),
+      },
+      ['createdAt', 'updatedAt']
+    );
   }
 }

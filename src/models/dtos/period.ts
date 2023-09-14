@@ -7,31 +7,25 @@ export interface DisciplineScheduleDTO {
   schedules: ClassScheduleDTO[];
 }
 
-export interface CreatePeriodDTO {
-  status?: PeriodStatus;
+export interface PeriodDTO {
+  guid: string;
+  status: PeriodStatus;
+  matrixModuleGuid: string;
   enrollmentStartDate?: string;
   enrollmentEndDate?: string;
   deadline?: string;
   vacancies?: number;
   classroomGuid?: string;
   shiftGuid?: string;
-  matrixModuleGuid: string;
   classId?: string;
   disciplinesSchedule?: DisciplineScheduleDTO[];
 }
 
-export interface UpdatePeriodDTO {
-  guid?: string;
+export interface CreatePeriodDTO extends Omit<PeriodDTO, 'guid' | 'status'> {
   status?: PeriodStatus;
-  enrollmentStartDate?: string;
-  enrollmentEndDate?: string;
-  deadline?: string;
-  vacancies?: number;
-  classroomGuid?: string;
-  shiftGuid?: string;
-  classId?: string;
-  disciplinesSchedule?: DisciplineScheduleDTO[];
 }
+
+export type UpdatePeriodDTO = Partial<Omit<PeriodDTO, 'matrixModuleGuid'>>;
 
 export interface SimplifiedDisciplineScheduleDTO {
   guid: string;
