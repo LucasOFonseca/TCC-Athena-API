@@ -60,12 +60,13 @@ model Discipline {
 }
 
 model Course {
-  guid      String   @id @default(uuid())
-  status    Status   @default(active)
-  name      String   @unique @db.VarChar(120)
-  matrices  Matrix[]
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  guid        String       @id @default(uuid())
+  status      Status       @default(active)
+  name        String       @unique @db.VarChar(120)
+  matrices    Matrix[]
+  enrollments Enrollment[]
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
 
   @@map("courses")
 }
@@ -143,18 +144,19 @@ model Employee {
 }
 
 model Student {
-  guid        String   @id @default(uuid())
-  status      Status   @default(active)
-  name        String   @db.VarChar(120)
-  cpf         String   @unique @db.VarChar(11)
+  guid        String       @id @default(uuid())
+  status      Status       @default(active)
+  name        String       @db.VarChar(120)
+  cpf         String       @unique @db.VarChar(11)
   birthdate   DateTime
-  phoneNumber String   @map("phone_number") @db.VarChar(11)
-  email       String   @unique @db.VarChar(256)
+  phoneNumber String       @map("phone_number") @db.VarChar(11)
+  email       String       @unique @db.VarChar(256)
   password    String
-  address     Address  @relation(fields: [addressGuid], references: [guid])
-  addressGuid String   @unique @map("address_guid")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  address     Address      @relation(fields: [addressGuid], references: [guid])
+  enrollments Enrollment[]
+  addressGuid String       @unique @map("address_guid")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
 
   @@map("students")
 }
@@ -217,6 +219,21 @@ model DisciplineSchedule {
   @@map("discipline_schedules")
 }
 
+model Enrollment {
+  guid             String   @id @default(uuid())
+  enrollmentNumber Int      @unique @map("enrollment_number")
+  course           Course   @relation(fields: [courseGuid], references: [guid])
+  courseGuid       String   @map("course_guid")
+  student          Student  @relation(fields: [studentGuid], references: [guid])
+  studentGuid      String   @map("student_guid")
+  period           Period?  @relation(fields: [periodGuid], references: [guid])
+  periodGuid       String?  @map("period_guid")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@map("enrollments")
+}
+
 model Period {
   guid                String               @id @default(uuid())
   status              PeriodStatus         @default(notStarted)
@@ -232,6 +249,7 @@ model Period {
   shift               Shift?               @relation(fields: [shiftGuid], references: [guid])
   shiftGuid           String?              @map("shift_guid")
   disciplinesSchedule DisciplineSchedule[]
+  enrollments         Enrollment[]
   createdAt           DateTime             @default(now()) @map("created_at")
   updatedAt           DateTime             @updatedAt @map("updated_at")
 

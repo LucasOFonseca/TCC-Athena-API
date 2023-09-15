@@ -139,9 +139,21 @@ export class PeriodRepository implements IRepository {
       data: {
         status: status as PrismaPeriodStatus,
         classId: period.classId,
-        deadline: period.deadline,
-        enrollmentEndDate: period.enrollmentEndDate,
-        enrollmentStartDate: period.enrollmentStartDate,
+        deadline: dayjs(period.deadline)
+          .set('hour', 0)
+          .set('minute', 0)
+          .set('second', 0)
+          .toISOString(),
+        enrollmentEndDate: dayjs(period.enrollmentEndDate)
+          .set('hour', 0)
+          .set('minute', 0)
+          .set('second', 0)
+          .toISOString(),
+        enrollmentStartDate: dayjs(period.enrollmentStartDate)
+          .set('hour', 0)
+          .set('minute', 0)
+          .set('second', 0)
+          .toISOString(),
         matrixModuleGuid: period.matrixModuleGuid,
         vacancies: period.vacancies,
         classroomGuid: period.classroomGuid,
@@ -462,9 +474,21 @@ export class PeriodRepository implements IRepository {
       data: {
         status: period.status as PrismaPeriodStatus,
         classId: period.classId,
-        deadline: period.deadline,
-        enrollmentEndDate: period.enrollmentEndDate,
-        enrollmentStartDate: period.enrollmentStartDate,
+        deadline: dayjs(period.deadline)
+          .set('hour', 0)
+          .set('minute', 0)
+          .set('second', 0)
+          .toISOString(),
+        enrollmentEndDate: dayjs(period.enrollmentEndDate)
+          .set('hour', 0)
+          .set('minute', 0)
+          .set('second', 0)
+          .toISOString(),
+        enrollmentStartDate: dayjs(period.enrollmentStartDate)
+          .set('hour', 0)
+          .set('minute', 0)
+          .set('second', 0)
+          .toISOString(),
         matrixModuleGuid: period.matrixModuleGuid,
         vacancies: period.vacancies,
         classroomGuid: period.classroomGuid,
@@ -636,5 +660,9 @@ export class PeriodRepository implements IRepository {
       },
       ['createdAt', 'updatedAt']
     );
+  }
+
+  async enrollStudents(guid: string, studentsGuidList: string[]) {
+    // TODO
   }
 }

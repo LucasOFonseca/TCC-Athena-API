@@ -1,4 +1,3 @@
-import dayjs from 'dayjs';
 import cron from 'node-cron';
 import { prismaClient } from '../infra/prisma';
 import { PeriodStatus } from '../models/dtos';
@@ -6,63 +5,51 @@ import { PeriodStatus } from '../models/dtos';
 export const updatePeriodStatusTask = cron.schedule(
   '0 0 * * *',
   async () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
     const periodsOpenedForEnrollment = await prismaClient.period.findMany({
       where: {
-        NOT: {
-          status: PeriodStatus.draft,
-        },
-        enrollmentStartDate: {
-          lte: dayjs()
-            .set('hour', 0)
-            .set('minute', 0)
-            .set('second', 0)
-            .toISOString(),
-          gte: dayjs()
-            .set('hour', 23)
-            .set('minute', 59)
-            .set('second', 59)
-            .toISOString(),
-        },
+        AND: [
+          {
+            status: PeriodStatus.notStarted,
+          },
+          {
+            enrollmentStartDate: {
+              equals: today,
+            },
+          },
+        ],
       },
     });
 
     const periodsInProgress = await prismaClient.period.findMany({
       where: {
-        NOT: {
-          status: PeriodStatus.draft,
-        },
-        enrollmentEndDate: {
-          lte: dayjs()
-            .set('hour', 0)
-            .set('minute', 0)
-            .set('second', 0)
-            .toISOString(),
-          gte: dayjs()
-            .set('hour', 23)
-            .set('minute', 59)
-            .set('second', 59)
-            .toISOString(),
-        },
+        AND: [
+          {
+            status: PeriodStatus.openForEnrollment,
+          },
+          {
+            enrollmentEndDate: {
+              equals: today,
+            },
+          },
+        ],
       },
     });
 
     const finishedPeriods = await prismaClient.period.findMany({
       where: {
-        NOT: {
-          status: PeriodStatus.draft,
-        },
-        deadline: {
-          lte: dayjs()
-            .set('hour', 0)
-            .set('minute', 0)
-            .set('second', 0)
-            .toISOString(),
-          gte: dayjs()
-            .set('hour', 23)
-            .set('minute', 59)
-            .set('second', 59)
-            .toISOString(),
-        },
+        AND: [
+          {
+            status: PeriodStatus.inProgress,
+          },
+          {
+            deadline: {
+              equals: today,
+            },
+          },
+        ],
       },
     });
 
