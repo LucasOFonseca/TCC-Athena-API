@@ -1,7 +1,11 @@
 /* eslint-disable no-restricted-syntax */
-import { PeriodStatus as PrismaPeriodStatus } from '@prisma/client';
+import { PeriodStatus as PrismaPeriodStatus, Status } from '@prisma/client';
 import dayjs from 'dayjs';
-import { excludeFields, parseArrayOfData } from '../../helpers/utils';
+import {
+  excludeFields,
+  generateEnrollmentNumber,
+  parseArrayOfData,
+} from '../../helpers/utils';
 import { AppError, ErrorMessages } from '../../infra/http/errors';
 import { prismaClient } from '../../infra/prisma';
 import { FindAllArgs, IRepository } from '../../interfaces';
@@ -13,6 +17,7 @@ import {
   DisciplineScheduleDTO,
   GenericStatus,
   PeriodStatus,
+  StudentEnrollmentDTO,
   UpdatePeriodDTO,
 } from '../dtos';
 
@@ -265,6 +270,14 @@ export class PeriodRepository implements IRepository {
     if (data.status !== undefined) period.status = data.status;
 
     period.validate();
+
+    if (
+      period.status === PeriodStatus.canceled &&
+      periodToUpdate.status !== PeriodStatus.draft &&
+      periodToUpdate.status !== PeriodStatus.notStarted
+    ) {
+      throw new AppError(ErrorMessages.MSGE06);
+    }
 
     if (
       period.status !== PeriodStatus.draft &&
@@ -662,7 +675,132 @@ export class PeriodRepository implements IRepository {
     );
   }
 
-  async enrollStudents(guid: string, studentsGuidList: string[]) {
-    // TODO
+  async enrollStudents(
+    guid: string,
+    studentsGuidList: string[]
+  ): Promise<StudentEnrollmentDTO[]> {
+    const period = await prismaClient.period.findUnique({
+      where: { guid },
+      include: {
+        matrixModule: {
+          include: {
+            Matrix: { include: { course: { include: { enrollments: true } } } },
+          },
+        },
+      },
+    });
+
+    if (!period) throw new AppError(ErrorMessages.MSGE05, 404);
+
+    const hasDuplicatedStudents =
+      studentsGuidList.length !== new Set(studentsGuidList).size;
+
+    if (hasDuplicatedStudents) throw new AppError(ErrorMessages.MSGE15);
+
+    const students = await prismaClient.student.findMany({
+      where: {
+        guid: {
+          in: studentsGuidList,
+        },
+        status: {
+          equals: Status.active,
+        },
+      },
+    });
+
+    if (students.length < studentsGuidList.length)
+      throw new AppError(ErrorMessages.MSGE05, 404);
+
+    const { enrollments, guid: courseGuid } = period.matrixModule.Matrix.course;
+
+    for await (const studentGuid of studentsGuidList) {
+      const currentStudentEnrollment = enrollments.find(
+        (e) => e.studentGuid === studentGuid
+      );
+
+      if (currentStudentEnrollment) {
+        if (currentStudentEnrollment.periodGuid === period.guid)
+          throw new AppError(ErrorMessages.MSGE02);
+
+        await prismaClient.enrollment.update({
+          where: { guid: currentStudentEnrollment.guid },
+          data: {
+            periodGuid: period.guid,
+          },
+        });
+      } else {
+        await prismaClient.enrollment.create({
+          data: {
+            courseGuid,
+            studentGuid,
+            periodGuid: guid,
+            enrollmentNumber: generateEnrollmentNumber(),
+          },
+        });
+      }
+    }
+
+    const periodEnrollments = await prismaClient.enrollment.findMany({
+      where: {
+        periodGuid: period.guid,
+      },
+      include: {
+        student: { select: { name: true } },
+      },
+      orderBy: {
+        student: {
+          name: 'asc',
+        },
+      },
+    });
+
+    return periodEnrollments.map((enrollment) => ({
+      guid: enrollment.guid,
+      enrollmentNumber: enrollment.enrollmentNumber,
+      student: enrollment.student.name,
+    }));
+  }
+
+  async cancelStudentsEnrollments(guid: string, studentsGuidList: string[]) {
+    const period = await prismaClient.period.findUnique({
+      where: { guid },
+      include: {
+        matrixModule: {
+          include: {
+            Matrix: { include: { course: { include: { enrollments: true } } } },
+          },
+        },
+      },
+    });
+
+    if (!period) throw new AppError(ErrorMessages.MSGE05, 404);
+
+    const hasDuplicatedStudents =
+      studentsGuidList.length !== new Set(studentsGuidList).size;
+
+    if (hasDuplicatedStudents) throw new AppError(ErrorMessages.MSGE15);
+
+    const students = await prismaClient.student.findMany({
+      where: {
+        guid: {
+          in: studentsGuidList,
+        },
+        status: {
+          equals: Status.active,
+        },
+      },
+    });
+
+    if (students.length < studentsGuidList.length)
+      throw new AppError(ErrorMessages.MSGE05, 404);
+
+    await prismaClient.enrollment.deleteMany({
+      where: {
+        studentGuid: {
+          in: studentsGuidList,
+        },
+        periodGuid: period.guid,
+      },
+    });
   }
 }

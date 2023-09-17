@@ -13,3 +13,4 @@ export * from './periodStatus';
 export * from './shift';
 export * from './status';
 export * from './student';
+export * from './studentEnrollment';
