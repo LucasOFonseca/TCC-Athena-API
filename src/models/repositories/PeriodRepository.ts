@@ -761,46 +761,15 @@ export class PeriodRepository implements IRepository {
     }));
   }
 
-  async cancelStudentsEnrollments(guid: string, studentsGuidList: string[]) {
-    const period = await prismaClient.period.findUnique({
-      where: { guid },
-      include: {
-        matrixModule: {
-          include: {
-            Matrix: { include: { course: { include: { enrollments: true } } } },
-          },
-        },
-      },
+  async cancelEnrollment(periodGuid: string, enrollmentGuid: string) {
+    const enrollmentToDelete = await prismaClient.enrollment.findFirst({
+      where: { guid: enrollmentGuid, periodGuid },
     });
 
-    if (!period) throw new AppError(ErrorMessages.MSGE05, 404);
+    if (!enrollmentToDelete) throw new AppError(ErrorMessages.MSGE05, 404);
 
-    const hasDuplicatedStudents =
-      studentsGuidList.length !== new Set(studentsGuidList).size;
-
-    if (hasDuplicatedStudents) throw new AppError(ErrorMessages.MSGE15);
-
-    const students = await prismaClient.student.findMany({
-      where: {
-        guid: {
-          in: studentsGuidList,
-        },
-        status: {
-          equals: Status.active,
-        },
-      },
-    });
-
-    if (students.length < studentsGuidList.length)
-      throw new AppError(ErrorMessages.MSGE05, 404);
-
-    await prismaClient.enrollment.deleteMany({
-      where: {
-        studentGuid: {
-          in: studentsGuidList,
-        },
-        periodGuid: period.guid,
-      },
+    await prismaClient.enrollment.delete({
+      where: { guid: enrollmentGuid },
     });
   }
 }

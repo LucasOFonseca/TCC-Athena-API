@@ -27,7 +27,7 @@ periodRoutes.put('/:guid', updatePeriodController.handle);
 periodRoutes.patch('/:guid/cancel', cancelPeriodController.handle);
 periodRoutes.post('/:guid/enroll', enrollStudentsController.handle);
 periodRoutes.delete(
-  '/:guid/enrollments/cancel',
+  '/:periodGuid/enrollments/:enrollmentGuid',
   cancelStudentsEnrollmentsController.handle
 );
 

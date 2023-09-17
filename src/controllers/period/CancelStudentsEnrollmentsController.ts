@@ -3,12 +3,11 @@ import { PeriodService } from '../../services';
 
 export class CancelStudentsEnrollmentsController {
   async handle(req: Request, res: Response) {
-    const { guid } = req.params;
-    const data = req.body as string[];
+    const { periodGuid, enrollmentGuid } = req.params;
 
     const periodService = new PeriodService();
 
-    await periodService.cancelStudentsEnrollments(guid, data);
+    await periodService.cancelEnrollment(periodGuid, enrollmentGuid);
 
     return res.status(202).send();
   }
