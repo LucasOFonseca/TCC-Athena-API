@@ -34,4 +34,10 @@ export class ClassroomService implements IService {
 
     return result;
   }
+
+  async findByGuid(guid: string) {
+    const classroom = await this.classroomRepository.findByGuid(guid);
+
+    return classroom;
+  }
 }

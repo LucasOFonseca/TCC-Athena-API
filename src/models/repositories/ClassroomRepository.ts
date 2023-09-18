@@ -1,3 +1,4 @@
+import { Status } from '@prisma/client';
 import { excludeFields, parseArrayOfData } from '../../helpers/utils';
 import { AppError, ErrorMessages } from '../../infra/http/errors';
 import { prismaClient } from '../../infra/prisma';
@@ -83,7 +84,7 @@ export class ClassroomRepository implements IRepository {
           ]
         : undefined,
       status: {
-        equals: args?.filterByStatus,
+        equals: args?.filterByStatus as Status,
       },
     };
 
@@ -100,5 +101,15 @@ export class ClassroomRepository implements IRepository {
       data: parseArrayOfData(data, ['createdAt', 'updatedAt']),
       totalItems,
     };
+  }
+
+  async findByGuid(guid: string) {
+    const classroom = await prismaClient.classroom.findUnique({
+      where: { guid },
+    });
+
+    if (!classroom) throw new AppError(ErrorMessages.MSGE05, 404);
+
+    return excludeFields(classroom, ['createdAt', 'updatedAt']);
   }
 }
