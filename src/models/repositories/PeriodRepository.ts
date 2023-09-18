@@ -584,7 +584,11 @@ export class PeriodRepository implements IRepository {
       include: {
         disciplinesSchedule: {
           include: {
-            schedules: true,
+            schedules: {
+              orderBy: {
+                dayOfWeek: 'asc',
+              },
+            },
             Discipline: {
               select: {
                 name: true,
