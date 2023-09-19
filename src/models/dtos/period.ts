@@ -10,6 +10,7 @@ export interface DisciplineScheduleDTO {
 export interface PeriodDTO {
   guid: string;
   status: PeriodStatus;
+  matrixGuid: string;
   matrixModuleGuid: string;
   enrollmentStartDate?: string;
   enrollmentEndDate?: string;
@@ -21,11 +22,14 @@ export interface PeriodDTO {
   disciplinesSchedule?: DisciplineScheduleDTO[];
 }
 
-export interface CreatePeriodDTO extends Omit<PeriodDTO, 'guid' | 'status'> {
+export interface CreatePeriodDTO
+  extends Omit<PeriodDTO, 'guid' | 'status' | 'matrixGuid'> {
   status?: PeriodStatus;
 }
 
-export type UpdatePeriodDTO = Partial<Omit<PeriodDTO, 'matrixModuleGuid'>>;
+export type UpdatePeriodDTO = Partial<
+  Omit<PeriodDTO, 'matrixModuleGuid' | 'matrixGuid'>
+>;
 
 export interface SimplifiedDisciplineScheduleDTO {
   guid: string;

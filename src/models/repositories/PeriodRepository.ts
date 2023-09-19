@@ -656,6 +656,15 @@ export class PeriodRepository implements IRepository {
             schedules: true,
           },
         },
+        matrixModule: {
+          select: {
+            Matrix: {
+              select: {
+                guid: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -664,6 +673,7 @@ export class PeriodRepository implements IRepository {
     return excludeFields(
       {
         ...period,
+        matrixGuid: period.matrixModule.Matrix.guid,
         disciplinesSchedule: parseArrayOfData(
           period.disciplinesSchedule.map((disciplineSchedule) => ({
             ...disciplineSchedule,
@@ -675,7 +685,7 @@ export class PeriodRepository implements IRepository {
           ['createdAt', 'updatedAt']
         ),
       },
-      ['createdAt', 'updatedAt']
+      ['createdAt', 'updatedAt', 'matrixModule']
     );
   }
 
