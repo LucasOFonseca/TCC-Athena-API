@@ -164,6 +164,23 @@ export class PeriodRepository implements IRepository {
         classroomGuid: period.classroomGuid,
         shiftGuid: period.shiftGuid,
       },
+      include: {
+        matrixModule: {
+          select: {
+            name: true,
+            Matrix: {
+              select: {
+                name: true,
+                course: {
+                  select: {
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     });
 
     const createdDisciplinesSchedule = [];
@@ -183,7 +200,21 @@ export class PeriodRepository implements IRepository {
             },
           },
           include: {
-            schedules: true,
+            schedules: {
+              orderBy: {
+                dayOfWeek: 'asc',
+              },
+            },
+            Discipline: {
+              select: {
+                name: true,
+              },
+            },
+            educator: {
+              select: {
+                name: true,
+              },
+            },
           },
         });
 
@@ -191,26 +222,30 @@ export class PeriodRepository implements IRepository {
       }
     }
 
-    return excludeFields(
-      {
-        ...createdPeriod,
-        disciplinesSchedule: parseArrayOfData(
-          createdDisciplinesSchedule.map((s) => ({
-            ...s,
-            schedules: parseArrayOfData(s.schedules, [
-              'createdAt',
-              'updatedAt',
-            ]),
-          })),
-          ['createdAt', 'updatedAt']
-        ),
-      },
-      ['createdAt', 'updatedAt']
-    );
+    return {
+      guid: createdPeriod.guid,
+      status: createdPeriod.status as PeriodStatus,
+      name: `${createdPeriod.matrixModule.Matrix.course.name}/${
+        createdPeriod.matrixModule.Matrix.name
+      } - ${createdPeriod.matrixModule.name}${
+        createdPeriod.classId ? ` (Turma ${createdPeriod.classId})` : ''
+      }`,
+      disciplinesSchedule: createdDisciplinesSchedule.map(
+        (disciplineSchedule) => ({
+          guid: disciplineSchedule.guid,
+          name: disciplineSchedule.Discipline.name,
+          educator: disciplineSchedule.educator.name,
+          schedules: parseArrayOfData(disciplineSchedule.schedules, [
+            'createdAt',
+            'updatedAt',
+          ]),
+        })
+      ),
+    };
   }
 
   async update(guid: string, data: UpdatePeriodDTO) {
-    const periodToUpdate = await prismaClient.period.findUnique({
+    const foundPeriod = await prismaClient.period.findUnique({
       where: { guid },
       include: {
         disciplinesSchedule: {
@@ -226,7 +261,12 @@ export class PeriodRepository implements IRepository {
       },
     });
 
-    if (!periodToUpdate) throw new AppError(ErrorMessages.MSGE05, 404);
+    if (!foundPeriod) throw new AppError(ErrorMessages.MSGE05, 404);
+
+    const periodToUpdate = excludeFields(foundPeriod, [
+      'createdAt',
+      'updatedAt',
+    ]) as typeof foundPeriod;
 
     const disciplinesSchedule = this.createDisciplinesScheduleFromDTO(
       periodToUpdate.disciplinesSchedule.map((disciplineSchedule) => ({
@@ -510,28 +550,61 @@ export class PeriodRepository implements IRepository {
       include: {
         disciplinesSchedule: {
           include: {
-            schedules: true,
+            schedules: {
+              orderBy: {
+                dayOfWeek: 'asc',
+              },
+            },
+            Discipline: {
+              select: {
+                name: true,
+              },
+            },
+            educator: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+        matrixModule: {
+          select: {
+            name: true,
+            Matrix: {
+              select: {
+                name: true,
+                course: {
+                  select: {
+                    name: true,
+                  },
+                },
+              },
+            },
           },
         },
       },
     });
 
-    return excludeFields(
-      {
-        ...updatedPeriod,
-        disciplinesSchedule: parseArrayOfData(
-          updatedPeriod.disciplinesSchedule.map((s) => ({
-            ...s,
-            schedules: parseArrayOfData(s.schedules, [
-              'createdAt',
-              'updatedAt',
-            ]),
-          })),
-          ['createdAt', 'updatedAt']
-        ),
-      },
-      ['createdAt', 'updatedAt']
-    );
+    return {
+      guid: updatedPeriod.guid,
+      status: updatedPeriod.status as PeriodStatus,
+      name: `${updatedPeriod.matrixModule.Matrix.course.name}/${
+        updatedPeriod.matrixModule.Matrix.name
+      } - ${updatedPeriod.matrixModule.name}${
+        updatedPeriod.classId ? ` (Turma ${updatedPeriod.classId})` : ''
+      }`,
+      disciplinesSchedule: updatedPeriod.disciplinesSchedule.map(
+        (disciplineSchedule) => ({
+          guid: disciplineSchedule.guid,
+          name: disciplineSchedule.Discipline.name,
+          educator: disciplineSchedule.educator.name,
+          schedules: parseArrayOfData(disciplineSchedule.schedules, [
+            'createdAt',
+            'updatedAt',
+          ]),
+        })
+      ),
+    };
   }
 
   async findAll(args?: FindAllPeriodsArgs) {
