@@ -251,6 +251,16 @@ export class PeriodRepository implements IRepository {
         disciplinesSchedule: {
           include: {
             schedules: true,
+            Discipline: {
+              select: {
+                name: true,
+              },
+            },
+            educator: {
+              select: {
+                name: true,
+              },
+            },
           },
         },
         matrixModule: {
@@ -270,7 +280,11 @@ export class PeriodRepository implements IRepository {
 
     const disciplinesSchedule = this.createDisciplinesScheduleFromDTO(
       periodToUpdate.disciplinesSchedule.map((disciplineSchedule) => ({
-        ...disciplineSchedule,
+        guid: disciplineSchedule.guid,
+        employeeGuid: disciplineSchedule.employeeGuid,
+        employeeName: disciplineSchedule.educator.name,
+        disciplineGuid: disciplineSchedule.disciplineGuid,
+        disciplineName: disciplineSchedule.Discipline.name,
         schedules: disciplineSchedule.schedules.map((s) => ({
           ...s,
           startTime: s.startTime.toISOString(),
@@ -727,6 +741,16 @@ export class PeriodRepository implements IRepository {
         disciplinesSchedule: {
           include: {
             schedules: true,
+            Discipline: {
+              select: {
+                name: true,
+              },
+            },
+            educator: {
+              select: {
+                name: true,
+              },
+            },
           },
         },
         matrixModule: {
@@ -750,12 +774,14 @@ export class PeriodRepository implements IRepository {
         disciplinesSchedule: parseArrayOfData(
           period.disciplinesSchedule.map((disciplineSchedule) => ({
             ...disciplineSchedule,
+            disciplineName: disciplineSchedule.Discipline.name,
+            employeeName: disciplineSchedule.educator.name,
             schedules: parseArrayOfData(disciplineSchedule.schedules, [
               'createdAt',
               'updatedAt',
             ]),
           })),
-          ['createdAt', 'updatedAt']
+          ['createdAt', 'updatedAt', 'Discipline', 'educator']
         ),
       },
       ['createdAt', 'updatedAt', 'matrixModule']

@@ -3,7 +3,9 @@ import { ClassScheduleDTO, PeriodStatus } from '.';
 export interface DisciplineScheduleDTO {
   guid?: string;
   employeeGuid: string;
+  employeeName: string;
   disciplineGuid: string;
+  disciplineName: string;
   schedules: ClassScheduleDTO[];
 }
 
