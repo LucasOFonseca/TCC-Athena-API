@@ -1,5 +1,9 @@
 import bcrypt from 'bcrypt';
-import { excludeFields, generatePassword } from '../../helpers/utils';
+import {
+  excludeFields,
+  generatePassword,
+  parseArrayOfData,
+} from '../../helpers/utils';
 import { AppError, ErrorMessages } from '../../infra/http/errors';
 import { prismaClient } from '../../infra/prisma';
 import { FindAllArgs, IRepository } from '../../interfaces';
@@ -311,7 +315,7 @@ export class EmployeeRepository implements IRepository {
           ]
         : undefined,
       status: {
-        equals: args?.filterByStatus,
+        equals: args?.filterByStatus as GenericStatus,
       },
       roles: {
         some: {
@@ -392,7 +396,42 @@ export class EmployeeRepository implements IRepository {
 
       return { ...employee, roles: employee.roles.map((role) => role.role) };
     } catch {
-      throw new AppError(ErrorMessages.MSGE02);
+      throw new AppError(ErrorMessages.MSGE05, 404);
+    }
+  }
+
+  async findEmployeeSchedules(guid: string) {
+    try {
+      const employee = await prismaClient.employee.findUniqueOrThrow({
+        where: { guid },
+        include: {
+          disciplinesSchedule: {
+            include: {
+              schedules: true,
+              Discipline: {
+                select: {
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      return parseArrayOfData(
+        employee.disciplinesSchedule.map((disciplineSchedule) => ({
+          ...disciplineSchedule,
+          disciplineName: disciplineSchedule.Discipline.name,
+          employeeName: employee.name,
+          schedules: parseArrayOfData(disciplineSchedule.schedules, [
+            'createdAt',
+            'updatedAt',
+          ]),
+        })),
+        ['createdAt', 'updatedAt', 'Discipline']
+      );
+    } catch {
+      throw new AppError(ErrorMessages.MSGE05, 404);
     }
   }
 }

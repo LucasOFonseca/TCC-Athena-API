@@ -341,6 +341,7 @@ export class MatrixRepository implements IRepository {
                   guid: true,
                   name: true,
                   workload: true,
+                  weeklyClasses: true,
                 },
               },
             },

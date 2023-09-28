@@ -42,4 +42,10 @@ export class EmployeeService implements IService {
 
     return result;
   }
+
+  async listEmployeeSchedules(guid: string) {
+    const result = await this.employeeRepository.findEmployeeSchedules(guid);
+
+    return result;
+  }
 }
