@@ -13,19 +13,19 @@ export class PeriodValidator {
     objectSchedules: DisciplineScheduleDTO[],
     disciplinesSchedule: DisciplineScheduleDTO[]
   ) {
-    let isAvailable = true;
+    const allObjectSchedules = objectSchedules.flatMap(
+      ({ schedules }) => schedules
+    );
+    const allDisciplineSchedules = disciplinesSchedule.flatMap(
+      ({ schedules }) => schedules
+    );
 
-    objectSchedules.forEach(({ schedules }) => {
-      isAvailable = !disciplinesSchedule.every(
-        ({ schedules: dataSchedules }) => {
-          return !dataSchedules.every((schedule) =>
-            schedules.some((s) => s.guid === schedule.guid)
-          );
-        }
-      );
-    });
-
-    return isAvailable;
+    return allDisciplineSchedules.every(
+      (disciplineSchedule) =>
+        !allObjectSchedules.some(
+          (objectSchedule) => objectSchedule.guid === disciplineSchedule.guid
+        )
+    );
   }
 
   async checkIfPeriodExists(classId: string, matrixModuleGuid: string) {
@@ -74,7 +74,7 @@ export class PeriodValidator {
     ) {
       const isClassroomAvailable = this.checkScheduleAvailability(
         selectedClassroom.disciplinesSchedule as unknown as DisciplineScheduleDTO[],
-        disciplinesSchedule
+        disciplinesSchedule as unknown as DisciplineScheduleDTO[]
       );
 
       if (!isClassroomAvailable) throw new AppError(ErrorMessages.MSGE16);
@@ -122,7 +122,7 @@ export class PeriodValidator {
     if (employee.disciplinesSchedule.length > 0) {
       const isEmployeeAvailable = this.checkScheduleAvailability(
         employee.disciplinesSchedule as unknown as DisciplineScheduleDTO[],
-        disciplinesSchedule
+        disciplinesSchedule as unknown as DisciplineScheduleDTO[]
       );
 
       if (!isEmployeeAvailable) throw new AppError(ErrorMessages.MSGE16);

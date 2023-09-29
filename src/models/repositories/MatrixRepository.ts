@@ -297,7 +297,7 @@ export class MatrixRepository implements IRepository {
           ]
         : undefined,
       status: {
-        equals: args?.filterByStatus,
+        equals: args?.filterByStatus as GenericStatus,
       },
     };
 
