@@ -858,7 +858,7 @@ export class PeriodRepository implements IRepository {
         periodGuid: period.guid,
       },
       include: {
-        student: { select: { name: true } },
+        student: { select: { guid: true, name: true } },
       },
       orderBy: {
         student: {
@@ -870,7 +870,35 @@ export class PeriodRepository implements IRepository {
     return periodEnrollments.map((enrollment) => ({
       guid: enrollment.guid,
       enrollmentNumber: enrollment.enrollmentNumber,
-      student: enrollment.student.name,
+      studentName: enrollment.student.name,
+      studentGuid: enrollment.student.guid,
+    }));
+  }
+
+  async findPeriodEnrollments(guid: string) {
+    const period = await prismaClient.period.findUnique({
+      where: { guid },
+      include: {
+        enrollments: {
+          include: {
+            student: { select: { guid: true, name: true } },
+          },
+          orderBy: {
+            student: {
+              name: 'asc',
+            },
+          },
+        },
+      },
+    });
+
+    if (!period) throw new AppError(ErrorMessages.MSGE05, 404);
+
+    return period.enrollments.map((enrollment) => ({
+      guid: enrollment.guid,
+      enrollmentNumber: enrollment.enrollmentNumber,
+      studentName: enrollment.student.name,
+      studentGuid: enrollment.student.guid,
     }));
   }
 

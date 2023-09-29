@@ -5,6 +5,7 @@ import {
   CreatePeriodController,
   EnrollStudentsController,
   GetPeriodDetailsController,
+  ListPeriodEnrollmentsController,
   ListPeriodsController,
   UpdatePeriodController,
 } from '../../../controllers/period';
@@ -17,6 +18,7 @@ const updatePeriodController = new UpdatePeriodController();
 const getPeriodDetailsController = new GetPeriodDetailsController();
 const cancelPeriodController = new CancelPeriodController();
 const enrollStudentsController = new EnrollStudentsController();
+const listPeriodEnrollments = new ListPeriodEnrollmentsController();
 const cancelStudentsEnrollmentsController =
   new CancelStudentsEnrollmentsController();
 
@@ -26,6 +28,7 @@ periodRoutes.get('/:guid', getPeriodDetailsController.handle);
 periodRoutes.put('/:guid', updatePeriodController.handle);
 periodRoutes.patch('/:guid/cancel', cancelPeriodController.handle);
 periodRoutes.post('/:guid/enroll', enrollStudentsController.handle);
+periodRoutes.get('/:guid/enrollments', listPeriodEnrollments.handle);
 periodRoutes.delete(
   '/:periodGuid/enrollments/:enrollmentGuid',
   cancelStudentsEnrollmentsController.handle

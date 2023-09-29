@@ -46,6 +46,12 @@ export class PeriodService implements IService {
     return result;
   }
 
+  async listPeriodEnrollments(guid: string) {
+    const result = await this.periodRepository.findPeriodEnrollments(guid);
+
+    return result;
+  }
+
   async cancelEnrollment(periodGuid: string, enrollmentGuid: string) {
     await this.periodRepository.cancelEnrollment(periodGuid, enrollmentGuid);
   }
