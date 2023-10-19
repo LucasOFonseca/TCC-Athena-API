@@ -53,6 +53,7 @@ model Discipline {
   weeklyClasses       Int                  @default(1) @map("weekly_classes")
   matrixModules       MatrixModule[]
   disciplineSchedules DisciplineSchedule[]
+  attendanceLogs      AttendanceLog[]
   createdAt           DateTime             @default(now()) @map("created_at")
   updatedAt           DateTime             @updatedAt @map("updated_at")
 
@@ -144,19 +145,20 @@ model Employee {
 }
 
 model Student {
-  guid        String       @id @default(uuid())
-  status      Status       @default(active)
-  name        String       @db.VarChar(120)
-  cpf         String       @unique @db.VarChar(11)
-  birthdate   DateTime
-  phoneNumber String       @map("phone_number") @db.VarChar(11)
-  email       String       @unique @db.VarChar(256)
-  password    String
-  address     Address      @relation(fields: [addressGuid], references: [guid])
-  enrollments Enrollment[]
-  addressGuid String       @unique @map("address_guid")
-  createdAt   DateTime     @default(now()) @map("created_at")
-  updatedAt   DateTime     @updatedAt @map("updated_at")
+  guid            String           @id @default(uuid())
+  status          Status           @default(active)
+  name            String           @db.VarChar(120)
+  cpf             String           @unique @db.VarChar(11)
+  birthdate       DateTime
+  phoneNumber     String           @map("phone_number") @db.VarChar(11)
+  email           String           @unique @db.VarChar(256)
+  password        String
+  address         Address          @relation(fields: [addressGuid], references: [guid])
+  addressGuid     String           @unique @map("address_guid")
+  enrollments     Enrollment[]
+  studentAbsences StudentAbsence[]
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
 
   @@map("students")
 }
@@ -250,8 +252,37 @@ model Period {
   shiftGuid           String?              @map("shift_guid")
   disciplinesSchedule DisciplineSchedule[]
   enrollments         Enrollment[]
+  attendanceLogs      AttendanceLog[]
   createdAt           DateTime             @default(now()) @map("created_at")
   updatedAt           DateTime             @updatedAt @map("updated_at")
 
   @@map("periods")
+}
+
+model StudentAbsence {
+  guid              String         @id @default(uuid())
+  totalAbsences     Int            @map("total_absences")
+  student           Student        @relation(fields: [studentGuid], references: [guid])
+  studentGuid       String         @map("student_guid")
+  attendanceLog     AttendanceLog? @relation(fields: [attendanceLogGuid], references: [guid])
+  attendanceLogGuid String?        @map("attendance_log_guid")
+  createdAt         DateTime       @default(now()) @map("created_at")
+  updatedAt         DateTime       @updatedAt @map("updated_at")
+
+  @@map("student_absences")
+}
+
+model AttendanceLog {
+  guid            String           @id @default(uuid())
+  classDate       DateTime         @map("class_date")
+  totalClasses    Int              @map("total_classes")
+  period          Period           @relation(fields: [periodGuid], references: [guid])
+  periodGuid      String           @map("period_guid")
+  discipline      Discipline       @relation(fields: [disciplineGuid], references: [guid])
+  disciplineGuid  String           @map("discipline_guid")
+  studentAbsences StudentAbsence[]
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+
+  @@map("attendance_logs")
 }
