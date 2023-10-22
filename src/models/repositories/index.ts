@@ -1,3 +1,4 @@
+export * from './AttendanceLogRepository';
 export * from './ClassScheduleRepository';
 export * from './ClassroomRepository';
 export * from './CourseRepository';
