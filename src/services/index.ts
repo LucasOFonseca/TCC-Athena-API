@@ -1,3 +1,4 @@
+export * from './AttendanceLogService';
 export * from './AuthenticationService';
 export * from './ClassScheduleService';
 export * from './ClassroomService';

@@ -1,4 +1,5 @@
 export * from './address';
+export * from './attendanceLog';
 export * from './classSchedule';
 export * from './classroom';
 export * from './course';

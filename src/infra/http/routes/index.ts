@@ -1,9 +1,11 @@
 import { Router } from 'express';
 import {
   ensureAuthenticated,
+  ensureEducator,
   ensureManager,
   ensurePrincipal,
 } from '../middlewares';
+import { attendanceLogRoutes } from './attendanceLog.routes';
 import { authRoutes } from './auth.routes';
 import { classroomRoutes } from './classroom.routes';
 import { classScheduleRoutes } from './classSchedule.routes';
@@ -31,6 +33,12 @@ router.use(
 );
 router.use('/employee', ensureAuthenticated, ensurePrincipal, employeeRoutes);
 router.use('/matrix', ensureAuthenticated, ensurePrincipal, matrixRoutes);
+router.use(
+  '/attendance-log',
+  ensureAuthenticated,
+  ensureEducator,
+  attendanceLogRoutes
+);
 router.use('/auth', authRoutes);
 
 export { router };

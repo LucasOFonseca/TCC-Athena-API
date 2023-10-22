@@ -11,3 +11,15 @@ export interface CreateAttendanceLogDTO {
   totalClasses: number;
   studentAbsences: StudentAbsenceDTO[];
 }
+
+export interface UpdateAttendanceLogDTO {
+  guid?: string;
+  classDate?: string;
+  totalClasses?: number;
+  studentAbsences?: StudentAbsenceDTO[];
+}
+
+export interface SimplifiedAttendanceLogDTO {
+  guid: string;
+  classDate: string;
+}
