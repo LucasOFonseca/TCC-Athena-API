@@ -48,4 +48,23 @@ export class EmployeeService implements IService {
 
     return result;
   }
+
+  async listEmployeePeriods(guid: string) {
+    const result = await this.employeeRepository.findEmployeePeriods(guid);
+
+    return result;
+  }
+
+  async listEmployeeDisciplinesByPeriod(
+    employeeGuid: string,
+    periodGuid: string
+  ) {
+    const result =
+      await this.employeeRepository.findEmployeeDisciplinesByPeriod(
+        employeeGuid,
+        periodGuid
+      );
+
+    return result;
+  }
 }

@@ -7,6 +7,7 @@ export * from './dayOfWeek';
 export * from './discipline';
 export * from './employee';
 export * from './employeeRole';
+export * from './filterValue';
 export * from './matrix';
 export * from './paginatedData';
 export * from './period';

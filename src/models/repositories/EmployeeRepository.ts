@@ -17,6 +17,7 @@ import {
   CreateEmployeeDTO,
   EmployeeRole,
   GenericStatus,
+  PeriodStatus,
   UpdateEmployeeDTO,
 } from '../dtos';
 
@@ -433,5 +434,78 @@ export class EmployeeRepository implements IRepository {
     } catch {
       throw new AppError(ErrorMessages.MSGE05, 404);
     }
+  }
+
+  async findEmployeePeriods(guid: string) {
+    const employeePeriods = await prismaClient.period.findMany({
+      where: {
+        status: PeriodStatus.inProgress,
+        disciplinesSchedule: {
+          some: {
+            employeeGuid: guid,
+          },
+        },
+      },
+      select: {
+        guid: true,
+        classId: true,
+        matrixModule: {
+          select: {
+            name: true,
+            Matrix: {
+              select: {
+                name: true,
+                course: {
+                  select: {
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return employeePeriods.map((period) => ({
+      guid: period.guid,
+      name: `${period.matrixModule.Matrix.course.name}/${period.matrixModule.Matrix.name} - ${period.matrixModule.name} (Turma ${period.classId})`,
+    }));
+  }
+
+  async findEmployeeDisciplinesByPeriod(
+    employeeGuid: string,
+    periodGuid: string
+  ) {
+    const employeePeriods = await prismaClient.period.findMany({
+      where: {
+        status: PeriodStatus.inProgress,
+        guid: periodGuid,
+        disciplinesSchedule: {
+          some: {
+            employeeGuid,
+          },
+        },
+      },
+      select: {
+        matrixModule: {
+          select: {
+            disciplines: {
+              select: {
+                guid: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return employeePeriods.flatMap(({ matrixModule }) =>
+      matrixModule.disciplines.map((discipline) => ({
+        guid: discipline.guid,
+        name: discipline.name,
+      }))
+    );
   }
 }
