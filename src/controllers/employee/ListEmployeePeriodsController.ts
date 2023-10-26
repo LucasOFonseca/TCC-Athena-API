@@ -3,7 +3,7 @@ import { EmployeeService } from '../../services';
 
 export class ListEmployeePeriodsController {
   async handle(req: Request, res: Response) {
-    const { guid } = req.params;
+    const { guid } = req.user;
 
     const employeeService = new EmployeeService();
 

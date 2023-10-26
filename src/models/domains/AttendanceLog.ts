@@ -7,6 +7,7 @@ export class AttendanceLog {
     private _periodGuid: string,
     private _disciplineGuid: string,
     private _classDate: string,
+    private _classSummary: string,
     private _totalClasses: number,
     private _studentAbsences: StudentAbsenceDTO[],
     private _guid?: string
@@ -34,6 +35,14 @@ export class AttendanceLog {
 
   set classDate(classDate: string) {
     this._classDate = classDate;
+  }
+
+  get classSummary() {
+    return this._classSummary;
+  }
+
+  set classSummary(classSummary: string) {
+    this._classSummary = classSummary;
   }
 
   get totalClasses() {
@@ -76,6 +85,9 @@ export class AttendanceLog {
         guid: z.string().uuid('Guid inválido'),
         periodGuid: z.string().uuid('Guid inválido'),
         disciplineGuid: z.string().uuid('Guid inválido'),
+        classSummary: z
+          .string({ required_error: ErrorMessages.MSGE01 })
+          .max(1024, ErrorMessages.MSGE09),
         classDate: z
           .string({ required_error: ErrorMessages.MSGE01 })
           .datetime({ message: ErrorMessages.MSGE06 }),
@@ -83,12 +95,17 @@ export class AttendanceLog {
           .number({ required_error: ErrorMessages.MSGE01 })
           .min(1, ErrorMessages.MSGE10),
         studentAbsences: z.array(
-          z.object({
-            studentGuid: z.string().uuid('Guid inválido'),
-            totalAbsences: z
-              .number({ required_error: ErrorMessages.MSGE01 })
-              .min(0, ErrorMessages.MSGE10),
-          })
+          z
+            .object({
+              studentGuid: z.string().uuid('Guid inválido'),
+              totalPresences: z
+                .number({ required_error: ErrorMessages.MSGE01 })
+                .min(0, ErrorMessages.MSGE10),
+              totalAbsences: z
+                .number({ required_error: ErrorMessages.MSGE01 })
+                .min(0, ErrorMessages.MSGE10),
+            })
+            .partial({ totalPresences: true })
         ),
       })
       .partial({ guid: true });

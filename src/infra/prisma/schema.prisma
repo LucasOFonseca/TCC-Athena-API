@@ -261,6 +261,7 @@ model Period {
 
 model StudentAbsence {
   guid              String         @id @default(uuid())
+  totalPresences    Int            @default(0) @map("total_presences")
   totalAbsences     Int            @map("total_absences")
   student           Student        @relation(fields: [studentGuid], references: [guid])
   studentGuid       String         @map("student_guid")
@@ -275,6 +276,7 @@ model StudentAbsence {
 model AttendanceLog {
   guid            String           @id @default(uuid())
   classDate       DateTime         @map("class_date")
+  classSummary    String           @default("") @map("class_summary") @db.VarChar(1024)
   totalClasses    Int              @map("total_classes")
   period          Period           @relation(fields: [periodGuid], references: [guid])
   periodGuid      String           @map("period_guid")

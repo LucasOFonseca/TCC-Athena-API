@@ -293,9 +293,10 @@ export class EmployeeRepository implements IRepository {
 
   async findAll(args?: FindAllArgs & { role?: EmployeeRole }) {
     const where = {
-      NOT: args?.itemsToExclude
-        ? { guid: { in: args?.itemsToExclude } }
-        : undefined,
+      NOT:
+        args?.itemsToExclude && !args.role
+          ? { guid: { in: args?.itemsToExclude } }
+          : undefined,
       OR: args?.searchTerm
         ? [
             {

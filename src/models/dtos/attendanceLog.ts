@@ -1,6 +1,7 @@
 export interface StudentAbsenceDTO {
   guid?: string;
   studentGuid: string;
+  totalPresences?: number;
   totalAbsences: number;
 }
 
@@ -9,6 +10,7 @@ export interface CreateAttendanceLogDTO {
   disciplineGuid: string;
   classDate: string;
   totalClasses: number;
+  classSummary: string;
   studentAbsences: StudentAbsenceDTO[];
 }
 
@@ -16,10 +18,12 @@ export interface UpdateAttendanceLogDTO {
   guid?: string;
   classDate?: string;
   totalClasses?: number;
+  classSummary?: string;
   studentAbsences?: StudentAbsenceDTO[];
 }
 
 export interface SimplifiedAttendanceLogDTO {
   guid: string;
   classDate: string;
+  classSummary: string;
 }

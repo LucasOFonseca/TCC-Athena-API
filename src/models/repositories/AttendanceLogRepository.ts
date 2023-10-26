@@ -10,6 +10,7 @@ import { CreateAttendanceLogDTO, UpdateAttendanceLogDTO } from '../dtos';
 export class AttendanceLogRepository implements Omit<IRepository, 'findAll'> {
   async create({
     classDate,
+    classSummary,
     disciplineGuid,
     periodGuid,
     studentAbsences,
@@ -19,6 +20,7 @@ export class AttendanceLogRepository implements Omit<IRepository, 'findAll'> {
       periodGuid,
       disciplineGuid,
       classDate,
+      classSummary,
       totalClasses,
       studentAbsences
     );
@@ -55,6 +57,7 @@ export class AttendanceLogRepository implements Omit<IRepository, 'findAll'> {
         disciplineGuid: attendanceLog.disciplineGuid,
         classDate: attendanceLog.classDate,
         totalClasses: attendanceLog.totalClasses,
+        classSummary: attendanceLog.classSummary,
       },
     });
 
@@ -62,8 +65,9 @@ export class AttendanceLogRepository implements Omit<IRepository, 'findAll'> {
       attendanceLog.studentAbsences.map((studentAbsence) =>
         prismaClient.studentAbsence.create({
           data: {
-            studentGuid: studentAbsence.studentGuid,
-            totalAbsences: studentAbsence.totalAbsences,
+            ...studentAbsence,
+            totalPresences:
+              attendanceLog.totalClasses - studentAbsence.totalAbsences,
             attendanceLogGuid: createdAttendanceLog.guid,
           },
         })
@@ -94,6 +98,7 @@ export class AttendanceLogRepository implements Omit<IRepository, 'findAll'> {
             guid: true,
             studentGuid: true,
             totalAbsences: true,
+            totalPresences: true,
           },
         },
       },
@@ -105,12 +110,15 @@ export class AttendanceLogRepository implements Omit<IRepository, 'findAll'> {
       attendanceLogToUpdate.periodGuid,
       attendanceLogToUpdate.disciplineGuid,
       dayjs(attendanceLogToUpdate.classDate).format(),
+      attendanceLogToUpdate.classSummary,
       attendanceLogToUpdate.totalClasses,
       attendanceLogToUpdate.studentAbsences,
       attendanceLogToUpdate.guid
     );
 
     if (data.classDate !== undefined) attendanceLog.classDate = data.classDate;
+    if (data.classSummary !== undefined)
+      attendanceLog.classSummary = data.classSummary;
     if (data.totalClasses !== undefined)
       attendanceLog.totalClasses = data.totalClasses;
     if (data.studentAbsences !== undefined)
@@ -150,6 +158,8 @@ export class AttendanceLogRepository implements Omit<IRepository, 'findAll'> {
               },
               data: {
                 totalAbsences: studentAbsence.totalAbsences,
+                totalPresences:
+                  attendanceLog.totalClasses - studentAbsence.totalAbsences,
               },
             });
           }
@@ -172,6 +182,7 @@ export class AttendanceLogRepository implements Omit<IRepository, 'findAll'> {
           select: {
             guid: true,
             studentGuid: true,
+            totalPresences: true,
             totalAbsences: true,
           },
         },
@@ -197,6 +208,7 @@ export class AttendanceLogRepository implements Omit<IRepository, 'findAll'> {
       select: {
         guid: true,
         classDate: true,
+        classSummary: true,
       },
       orderBy: { classDate: 'desc' },
       skip: args?.skip,
@@ -220,6 +232,7 @@ export class AttendanceLogRepository implements Omit<IRepository, 'findAll'> {
             guid: true,
             studentGuid: true,
             totalAbsences: true,
+            totalPresences: true,
           },
         },
       },

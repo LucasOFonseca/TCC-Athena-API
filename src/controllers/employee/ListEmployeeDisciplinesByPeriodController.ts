@@ -3,12 +3,13 @@ import { EmployeeService } from '../../services';
 
 export class ListEmployeeDisciplinesByPeriodController {
   async handle(req: Request, res: Response) {
-    const { employeeGuid, periodGuid } = req.params;
+    const { guid } = req.user;
+    const { periodGuid } = req.params;
 
     const employeeService = new EmployeeService();
 
     const disciplines = await employeeService.listEmployeeDisciplinesByPeriod(
-      employeeGuid,
+      guid,
       periodGuid
     );
 

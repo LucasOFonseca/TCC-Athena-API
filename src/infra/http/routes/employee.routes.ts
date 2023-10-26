@@ -25,9 +25,9 @@ const changeEmployeeStatusController = new ChangeEmployeeStatusController();
 employeeRoutes.post('/', createEmployeeController.handle);
 employeeRoutes.get('/', listEmployeesController.handle);
 employeeRoutes.get('/:guid/schedules', listEmployeeSchedulesController.handle);
-employeeRoutes.get('/:guid/periods', listEmployeePeriodsController.handle);
+employeeRoutes.get('/periods', listEmployeePeriodsController.handle);
 employeeRoutes.get(
-  '/:employeeGuid/periods/:periodGuid/disciplines',
+  '/periods/:periodGuid/disciplines',
   listEmployeeDisciplinesByPeriodController.handle
 );
 employeeRoutes.put('/:guid', updateEmployeeController.handle);
