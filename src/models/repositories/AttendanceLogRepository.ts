@@ -65,10 +65,18 @@ export class AttendanceLogRepository implements Omit<IRepository, 'findAll'> {
       attendanceLog.studentAbsences.map((studentAbsence) =>
         prismaClient.studentAbsence.create({
           data: {
-            ...studentAbsence,
+            studentGuid: studentAbsence.studentGuid,
+            totalAbsences: studentAbsence.totalAbsences,
             totalPresences:
               attendanceLog.totalClasses - studentAbsence.totalAbsences,
             attendanceLogGuid: createdAttendanceLog.guid,
+          },
+          include: {
+            student: {
+              select: {
+                name: true,
+              },
+            },
           },
         })
       )
@@ -77,11 +85,13 @@ export class AttendanceLogRepository implements Omit<IRepository, 'findAll'> {
     return excludeFields(
       {
         ...createdAttendanceLog,
-        studentAbsences: parseArrayOfData(createdStudentAbsences, [
-          'createdAt',
-          'updatedAt',
-          'attendanceLogGuid',
-        ]),
+        studentAbsences: parseArrayOfData(
+          createdStudentAbsences.map((studentAbsence) => ({
+            ...studentAbsence,
+            studentName: studentAbsence.student.name,
+          })),
+          ['createdAt', 'updatedAt', 'attendanceLogGuid']
+        ),
       },
       ['createdAt', 'updatedAt']
     );
@@ -99,6 +109,11 @@ export class AttendanceLogRepository implements Omit<IRepository, 'findAll'> {
             studentGuid: true,
             totalAbsences: true,
             totalPresences: true,
+            student: {
+              select: {
+                name: true,
+              },
+            },
           },
         },
       },
@@ -112,7 +127,10 @@ export class AttendanceLogRepository implements Omit<IRepository, 'findAll'> {
       dayjs(attendanceLogToUpdate.classDate).format(),
       attendanceLogToUpdate.classSummary,
       attendanceLogToUpdate.totalClasses,
-      attendanceLogToUpdate.studentAbsences,
+      attendanceLogToUpdate.studentAbsences.map((studentAbsence) => ({
+        ...studentAbsence,
+        studentName: studentAbsence.student.name,
+      })),
       attendanceLogToUpdate.guid
     );
 
@@ -176,6 +194,7 @@ export class AttendanceLogRepository implements Omit<IRepository, 'findAll'> {
       data: {
         classDate: attendanceLog.classDate,
         totalClasses: attendanceLog.totalClasses,
+        classSummary: attendanceLog.classSummary,
       },
       include: {
         studentAbsences: {
@@ -184,12 +203,33 @@ export class AttendanceLogRepository implements Omit<IRepository, 'findAll'> {
             studentGuid: true,
             totalPresences: true,
             totalAbsences: true,
+            student: {
+              select: {
+                name: true,
+              },
+            },
+          },
+          orderBy: {
+            student: {
+              name: 'asc',
+            },
           },
         },
       },
     });
 
-    return excludeFields(updatedAttendanceLog, ['createdAt', 'updatedAt']);
+    return excludeFields(
+      {
+        ...updatedAttendanceLog,
+        studentAbsences: updatedAttendanceLog.studentAbsences.map(
+          (studentAbsence) => ({
+            ...studentAbsence,
+            studentName: studentAbsence.student.name,
+          })
+        ),
+      },
+      ['createdAt', 'updatedAt']
+    );
   }
 
   async findAll(args: FindAllArgs, periodGuid: string, disciplineGuid: string) {
@@ -233,6 +273,16 @@ export class AttendanceLogRepository implements Omit<IRepository, 'findAll'> {
             studentGuid: true,
             totalAbsences: true,
             totalPresences: true,
+            student: {
+              select: {
+                name: true,
+              },
+            },
+          },
+          orderBy: {
+            student: {
+              name: 'asc',
+            },
           },
         },
       },
@@ -240,6 +290,17 @@ export class AttendanceLogRepository implements Omit<IRepository, 'findAll'> {
 
     if (!attendanceLog) throw new AppError(ErrorMessages.MSGE05, 404);
 
-    return excludeFields(attendanceLog, ['createdAt', 'updatedAt']);
+    return excludeFields(
+      {
+        ...attendanceLog,
+        studentAbsences: attendanceLog.studentAbsences.map(
+          (studentAbsence) => ({
+            ...studentAbsence,
+            studentName: studentAbsence.student.name,
+          })
+        ),
+      },
+      ['createdAt', 'updatedAt']
+    );
   }
 }

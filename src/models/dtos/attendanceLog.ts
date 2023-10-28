@@ -1,6 +1,7 @@
 export interface StudentAbsenceDTO {
   guid?: string;
   studentGuid: string;
+  studentName: string;
   totalPresences?: number;
   totalAbsences: number;
 }
