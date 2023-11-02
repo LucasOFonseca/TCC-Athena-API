@@ -44,18 +44,24 @@ enum ShiftValue {
   evening
 }
 
+enum GradeItemType {
+  sum
+  average
+}
+
 model Discipline {
-  guid                String               @id @default(uuid())
-  status              Status               @default(active)
-  name                String               @unique @db.VarChar(120)
-  syllabus            String               @db.VarChar(500)
-  workload            Int
-  weeklyClasses       Int                  @default(1) @map("weekly_classes")
-  matrixModules       MatrixModule[]
-  disciplineSchedules DisciplineSchedule[]
-  attendanceLogs      AttendanceLog[]
-  createdAt           DateTime             @default(now()) @map("created_at")
-  updatedAt           DateTime             @updatedAt @map("updated_at")
+  guid                   String                  @id @default(uuid())
+  status                 Status                  @default(active)
+  name                   String                  @unique @db.VarChar(120)
+  syllabus               String                  @db.VarChar(500)
+  workload               Int
+  weeklyClasses          Int                     @default(1) @map("weekly_classes")
+  matrixModules          MatrixModule[]
+  disciplineSchedules    DisciplineSchedule[]
+  attendanceLogs         AttendanceLog[]
+  disciplineGradeConfigs DisciplineGradeConfig[]
+  createdAt              DateTime                @default(now()) @map("created_at")
+  updatedAt              DateTime                @updatedAt @map("updated_at")
 
   @@map("disciplines")
 }
@@ -157,6 +163,7 @@ model Student {
   addressGuid     String           @unique @map("address_guid")
   enrollments     Enrollment[]
   studentAbsences StudentAbsence[]
+  studentGrades   StudentGrade[]
   createdAt       DateTime         @default(now()) @map("created_at")
   updatedAt       DateTime         @updatedAt @map("updated_at")
 
@@ -237,24 +244,25 @@ model Enrollment {
 }
 
 model Period {
-  guid                String               @id @default(uuid())
-  status              PeriodStatus         @default(notStarted)
-  enrollmentStartDate DateTime?            @map("enrollment_start_date")
-  enrollmentEndDate   DateTime?            @map("enrollment_end_date")
-  deadline            DateTime?
-  vacancies           Int?
-  matrixModule        MatrixModule         @relation(fields: [matrixModuleGuid], references: [guid])
-  matrixModuleGuid    String               @map("matrix_module_guid")
-  classId             String?              @map("class_id")
-  classroom           Classroom?           @relation(fields: [classroomGuid], references: [guid])
-  classroomGuid       String?              @map("classroom_guid")
-  shift               Shift?               @relation(fields: [shiftGuid], references: [guid])
-  shiftGuid           String?              @map("shift_guid")
-  disciplinesSchedule DisciplineSchedule[]
-  enrollments         Enrollment[]
-  attendanceLogs      AttendanceLog[]
-  createdAt           DateTime             @default(now()) @map("created_at")
-  updatedAt           DateTime             @updatedAt @map("updated_at")
+  guid                   String                  @id @default(uuid())
+  status                 PeriodStatus            @default(notStarted)
+  enrollmentStartDate    DateTime?               @map("enrollment_start_date")
+  enrollmentEndDate      DateTime?               @map("enrollment_end_date")
+  deadline               DateTime?
+  vacancies              Int?
+  matrixModule           MatrixModule            @relation(fields: [matrixModuleGuid], references: [guid])
+  matrixModuleGuid       String                  @map("matrix_module_guid")
+  classId                String?                 @map("class_id")
+  classroom              Classroom?              @relation(fields: [classroomGuid], references: [guid])
+  classroomGuid          String?                 @map("classroom_guid")
+  shift                  Shift?                  @relation(fields: [shiftGuid], references: [guid])
+  shiftGuid              String?                 @map("shift_guid")
+  disciplinesSchedule    DisciplineSchedule[]
+  enrollments            Enrollment[]
+  attendanceLogs         AttendanceLog[]
+  disciplineGradeConfigs DisciplineGradeConfig[]
+  createdAt              DateTime                @default(now()) @map("created_at")
+  updatedAt              DateTime                @updatedAt @map("updated_at")
 
   @@map("periods")
 }
@@ -287,4 +295,56 @@ model AttendanceLog {
   updatedAt       DateTime         @updatedAt @map("updated_at")
 
   @@map("attendance_logs")
+}
+
+model GradeItem {
+  guid                      String                @id @default(uuid())
+  type                      GradeItemType
+  name                      String                @db.VarChar(120)
+  maxValue                  Float                 @map("max_value")
+  disciplineGradeConfig     DisciplineGradeConfig @relation(fields: [disciplineGradeConfigGuid], references: [guid])
+  disciplineGradeConfigGuid String                @map("discipline_grade_config_guid")
+  studentGradeItems         StudentGradeItem[]
+  createdAt                 DateTime              @default(now()) @map("created_at")
+  updatedAt                 DateTime              @updatedAt @map("updated_at")
+
+  @@map("grade_items")
+}
+
+model DisciplineGradeConfig {
+  guid           String      @id @default(uuid())
+  period         Period      @relation(fields: [periodGuid], references: [guid])
+  periodGuid     String      @map("period_guid")
+  discipline     Discipline  @relation(fields: [disciplineGuid], references: [guid])
+  disciplineGuid String      @map("discipline_guid")
+  gradeItems     GradeItem[]
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+
+  @@map("discipline_grade_configs")
+}
+
+model StudentGradeItem {
+  guid             String       @id @default(uuid())
+  value            Float
+  gradeItem        GradeItem    @relation(fields: [gradeItemGuid], references: [guid])
+  gradeItemGuid    String       @map("grade_item_guid")
+  studentGrade     StudentGrade @relation(fields: [studentGradeGuid], references: [guid])
+  studentGradeGuid String       @map("student_grade_guid")
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
+
+  @@map("student_grade_items")
+}
+
+model StudentGrade {
+  guid              String             @id @default(uuid())
+  finalValue        Float              @map("final_value")
+  student           Student            @relation(fields: [studentGuid], references: [guid])
+  studentGuid       String             @map("student_guid")
+  studentGradeItems StudentGradeItem[]
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @updatedAt @map("updated_at")
+
+  @@map("student_grades")
 }
