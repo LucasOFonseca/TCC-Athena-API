@@ -1,5 +1,10 @@
 import { IService } from '../interfaces';
-import { CreatePeriodDTO, PeriodStatus, UpdatePeriodDTO } from '../models/dtos';
+import {
+  CreatePeriodDTO,
+  DisciplineGradeConfigDTO,
+  PeriodStatus,
+  UpdatePeriodDTO,
+} from '../models/dtos';
 import { FindAllPeriodsArgs, PeriodRepository } from '../models/repositories';
 
 export class PeriodService implements IService {
@@ -54,5 +59,28 @@ export class PeriodService implements IService {
 
   async cancelEnrollment(periodGuid: string, enrollmentGuid: string) {
     await this.periodRepository.cancelEnrollment(periodGuid, enrollmentGuid);
+  }
+
+  async updateDisciplineGradeConfig(
+    periodGuid: string,
+    disciplineGuid: string,
+    data: DisciplineGradeConfigDTO
+  ) {
+    const config = await this.periodRepository.updateDisciplineGradeConfig(
+      periodGuid,
+      disciplineGuid,
+      data
+    );
+
+    return config;
+  }
+
+  async getDisciplineGradeConfig(periodGuid: string, disciplineGuid: string) {
+    const config = await this.periodRepository.findDisciplineGradeConfig(
+      periodGuid,
+      disciplineGuid
+    );
+
+    return config;
   }
 }

@@ -4,6 +4,7 @@ export * from './ClassSchedule';
 export * from './Classroom';
 export * from './Course';
 export * from './Discipline';
+export * from './DisciplineGradeConfig';
 export * from './DisciplineSchedule';
 export * from './Employee';
 export * from './Matrix';

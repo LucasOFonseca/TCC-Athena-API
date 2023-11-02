@@ -4,9 +4,11 @@ import {
   CancelStudentsEnrollmentsController,
   CreatePeriodController,
   EnrollStudentsController,
+  GetDisciplineGradeConfigController,
   GetPeriodDetailsController,
   ListPeriodEnrollmentsController,
   ListPeriodsController,
+  UpdateDisciplineGradeConfigController,
   UpdatePeriodController,
 } from '../../../controllers/period';
 
@@ -21,6 +23,10 @@ const enrollStudentsController = new EnrollStudentsController();
 const listPeriodEnrollments = new ListPeriodEnrollmentsController();
 const cancelStudentsEnrollmentsController =
   new CancelStudentsEnrollmentsController();
+const updateDisciplineGradeConfigController =
+  new UpdateDisciplineGradeConfigController();
+const getDisciplineGradeConfigController =
+  new GetDisciplineGradeConfigController();
 
 periodRoutes.post('/', createPeriodController.handle);
 periodRoutes.get('/', listPeriodsController.handle);
@@ -32,6 +38,14 @@ periodRoutes.get('/:guid/enrollments', listPeriodEnrollments.handle);
 periodRoutes.delete(
   '/:periodGuid/enrollments/:enrollmentGuid',
   cancelStudentsEnrollmentsController.handle
+);
+periodRoutes.put(
+  '/:periodGuid/disciplines/:disciplineGuid/grade-config',
+  updateDisciplineGradeConfigController.handle
+);
+periodRoutes.get(
+  '/:periodGuid/disciplines/:disciplineGuid/grade-config',
+  getDisciplineGradeConfigController.handle
 );
 
 export { periodRoutes };

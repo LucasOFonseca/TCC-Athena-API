@@ -60,6 +60,7 @@ model Discipline {
   disciplineSchedules    DisciplineSchedule[]
   attendanceLogs         AttendanceLog[]
   disciplineGradeConfigs DisciplineGradeConfig[]
+  studentGrades          StudentGrade[]
   createdAt              DateTime                @default(now()) @map("created_at")
   updatedAt              DateTime                @updatedAt @map("updated_at")
 
@@ -261,6 +262,7 @@ model Period {
   enrollments            Enrollment[]
   attendanceLogs         AttendanceLog[]
   disciplineGradeConfigs DisciplineGradeConfig[]
+  studentGrades          StudentGrade[]
   createdAt              DateTime                @default(now()) @map("created_at")
   updatedAt              DateTime                @updatedAt @map("updated_at")
 
@@ -342,6 +344,10 @@ model StudentGrade {
   finalValue        Float              @map("final_value")
   student           Student            @relation(fields: [studentGuid], references: [guid])
   studentGuid       String             @map("student_guid")
+  discipline        Discipline         @relation(fields: [disciplineGuid], references: [guid])
+  disciplineGuid    String             @map("discipline_guid")
+  period            Period             @relation(fields: [periodGuid], references: [guid])
+  periodGuid        String             @map("period_guid")
   studentGradeItems StudentGradeItem[]
   createdAt         DateTime           @default(now()) @map("created_at")
   updatedAt         DateTime           @updatedAt @map("updated_at")

@@ -9,13 +9,21 @@ import {
 import { AppError, ErrorMessages } from '../../infra/http/errors';
 import { prismaClient } from '../../infra/prisma';
 import { FindAllArgs, IRepository } from '../../interfaces';
-import { ClassSchedule, DisciplineSchedule, Period } from '../domains';
+import {
+  ClassSchedule,
+  DisciplineGradeConfig,
+  DisciplineSchedule,
+  Period,
+} from '../domains';
 import { PeriodValidator } from '../domains/validations';
 import {
   CreatePeriodDTO,
   DisciplineDTO,
+  DisciplineGradeConfigDTO,
   DisciplineScheduleDTO,
   GenericStatus,
+  GradeItemDTO,
+  GradeItemType,
   PeriodStatus,
   StudentEnrollmentDTO,
   UpdatePeriodDTO,
@@ -27,6 +35,16 @@ export interface FindAllPeriodsArgs
 }
 
 export class PeriodRepository implements IRepository {
+  private DEFAULT_DISCIPLINE_GRADE_CONFIG: DisciplineGradeConfigDTO = {
+    gradeItems: [
+      {
+        maxValue: 10,
+        name: 'Verificação de aprendizagem (VA)',
+        type: GradeItemType.average,
+      },
+    ],
+  };
+
   private validator = new PeriodValidator();
 
   private createDisciplinesScheduleFromDTO(
@@ -912,5 +930,197 @@ export class PeriodRepository implements IRepository {
     await prismaClient.enrollment.delete({
       where: { guid: enrollmentGuid },
     });
+  }
+
+  async updateDisciplineGradeConfig(
+    periodGuid: string,
+    disciplineGuid: string,
+    data: DisciplineGradeConfigDTO
+  ) {
+    if (
+      JSON.stringify(data) ===
+      JSON.stringify(this.DEFAULT_DISCIPLINE_GRADE_CONFIG)
+    ) {
+      return this.DEFAULT_DISCIPLINE_GRADE_CONFIG;
+    }
+
+    const disciplineGradeConfig = new DisciplineGradeConfig(
+      data.gradeItems,
+      data.guid
+    );
+
+    disciplineGradeConfig.validate();
+
+    const existingConfig = await prismaClient.disciplineGradeConfig.findFirst({
+      where: { periodGuid, disciplineGuid },
+    });
+
+    if (!existingConfig) {
+      const createdConfig = await prismaClient.disciplineGradeConfig.create({
+        data: {
+          periodGuid,
+          disciplineGuid,
+        },
+        select: {
+          guid: true,
+        },
+      });
+
+      const gradeItems = await prismaClient.$transaction(
+        data.gradeItems.map(({ maxValue, name, type }) =>
+          prismaClient.gradeItem.create({
+            data: {
+              name,
+              type,
+              maxValue,
+              disciplineGradeConfigGuid: createdConfig.guid,
+            },
+            select: {
+              guid: true,
+              name: true,
+              type: true,
+              maxValue: true,
+            },
+          })
+        )
+      );
+
+      return {
+        ...createdConfig,
+        gradeItems,
+      };
+    }
+
+    if (!data.guid) throw new AppError(ErrorMessages.MSGE05, 404);
+
+    const disciplineGradeConfigToUpdate =
+      await prismaClient.disciplineGradeConfig.findUnique({
+        where: { guid: data.guid },
+        select: {
+          guid: true,
+          gradeItems: {
+            select: {
+              guid: true,
+              name: true,
+              type: true,
+              maxValue: true,
+            },
+            orderBy: {
+              createdAt: 'desc',
+            },
+          },
+        },
+      });
+
+    if (!disciplineGradeConfigToUpdate)
+      throw new AppError(ErrorMessages.MSGE05, 404);
+
+    if (
+      JSON.stringify(disciplineGradeConfigToUpdate.gradeItems) !==
+      JSON.stringify(disciplineGradeConfig.gradeItems)
+    ) {
+      const itemsToDelete = disciplineGradeConfigToUpdate.gradeItems.filter(
+        (item) =>
+          !disciplineGradeConfig.gradeItems.find((i) => i.guid === item.guid)
+      );
+      const itemsToCreate = disciplineGradeConfig.gradeItems.filter(
+        (item) => !item.guid
+      );
+      const itemsToUpdate =
+        disciplineGradeConfig.gradeItems.flatMap<GradeItemDTO>((item) => {
+          if (!item.guid) return [];
+
+          const currentItem = disciplineGradeConfigToUpdate.gradeItems.find(
+            (i) => i.guid === item.guid
+          );
+
+          if (JSON.stringify(currentItem) === JSON.stringify(item)) return [];
+
+          return item;
+        });
+
+      if (itemsToDelete.length) {
+        await prismaClient.gradeItem.deleteMany({
+          where: {
+            disciplineGradeConfigGuid: data.guid,
+            guid: {
+              in: itemsToDelete.map((item) => item.guid),
+            },
+          },
+        });
+      }
+
+      if (itemsToCreate.length) {
+        await prismaClient.$transaction(
+          itemsToCreate.map(({ maxValue, name, type }) =>
+            prismaClient.gradeItem.create({
+              data: {
+                name,
+                type,
+                maxValue,
+                disciplineGradeConfigGuid: data.guid,
+              },
+            })
+          )
+        );
+      }
+
+      if (itemsToUpdate.length) {
+        await prismaClient.$transaction(
+          itemsToUpdate.map(({ guid, maxValue, name, type }) =>
+            prismaClient.gradeItem.update({
+              where: { guid },
+              data: {
+                name,
+                type,
+                maxValue,
+              },
+            })
+          )
+        );
+      }
+    }
+
+    const updatedConfig = await prismaClient.disciplineGradeConfig.findUnique({
+      where: { guid: data.guid },
+      select: {
+        guid: true,
+        gradeItems: {
+          select: {
+            guid: true,
+            name: true,
+            type: true,
+            maxValue: true,
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+        },
+      },
+    });
+
+    return updatedConfig;
+  }
+
+  async findDisciplineGradeConfig(periodGuid: string, disciplineGuid: string) {
+    const disciplineGradeConfig =
+      await prismaClient.disciplineGradeConfig.findFirst({
+        where: { periodGuid, disciplineGuid },
+        select: {
+          guid: true,
+          gradeItems: {
+            select: {
+              guid: true,
+              name: true,
+              type: true,
+              maxValue: true,
+            },
+          },
+        },
+      });
+
+    if (!disciplineGradeConfig) return this.DEFAULT_DISCIPLINE_GRADE_CONFIG;
+
+    return disciplineGradeConfig;
   }
 }
