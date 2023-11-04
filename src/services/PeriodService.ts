@@ -3,6 +3,7 @@ import {
   CreatePeriodDTO,
   DisciplineGradeConfigDTO,
   PeriodStatus,
+  StudentGradeDTO,
   UpdatePeriodDTO,
 } from '../models/dtos';
 import { FindAllPeriodsArgs, PeriodRepository } from '../models/repositories';
@@ -82,5 +83,28 @@ export class PeriodService implements IService {
     );
 
     return config;
+  }
+
+  async updateStudentsGrades(
+    periodGuid: string,
+    disciplineGuid: string,
+    data: StudentGradeDTO[]
+  ) {
+    const grades = await this.periodRepository.updateStudentsGrades(
+      periodGuid,
+      disciplineGuid,
+      data
+    );
+
+    return grades;
+  }
+
+  async getStudentsGrades(periodGuid: string, disciplineGuid: string) {
+    const grades = await this.periodRepository.findStudentsGrades(
+      periodGuid,
+      disciplineGuid
+    );
+
+    return grades;
   }
 }

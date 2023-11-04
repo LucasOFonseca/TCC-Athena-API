@@ -6,10 +6,12 @@ import {
   EnrollStudentsController,
   GetDisciplineGradeConfigController,
   GetPeriodDetailsController,
+  GetStudentsGradesController,
   ListPeriodEnrollmentsController,
   ListPeriodsController,
   UpdateDisciplineGradeConfigController,
   UpdatePeriodController,
+  UpdateStudentsGradesController,
 } from '../../../controllers/period';
 
 const periodRoutes = Router();
@@ -27,6 +29,8 @@ const updateDisciplineGradeConfigController =
   new UpdateDisciplineGradeConfigController();
 const getDisciplineGradeConfigController =
   new GetDisciplineGradeConfigController();
+const updateStudentsGradesController = new UpdateStudentsGradesController();
+const getStudentsGradesController = new GetStudentsGradesController();
 
 periodRoutes.post('/', createPeriodController.handle);
 periodRoutes.get('/', listPeriodsController.handle);
@@ -46,6 +50,14 @@ periodRoutes.put(
 periodRoutes.get(
   '/:periodGuid/disciplines/:disciplineGuid/grade-config',
   getDisciplineGradeConfigController.handle
+);
+periodRoutes.put(
+  '/:periodGuid/disciplines/:disciplineGuid/grades',
+  updateStudentsGradesController.handle
+);
+periodRoutes.get(
+  '/:periodGuid/disciplines/:disciplineGuid/grades',
+  getStudentsGradesController.handle
 );
 
 export { periodRoutes };

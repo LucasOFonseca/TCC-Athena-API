@@ -26,6 +26,7 @@ import {
   GradeItemType,
   PeriodStatus,
   StudentEnrollmentDTO,
+  StudentGradeDTO,
   UpdatePeriodDTO,
 } from '../dtos';
 
@@ -1122,5 +1123,208 @@ export class PeriodRepository implements IRepository {
     if (!disciplineGradeConfig) return this.DEFAULT_DISCIPLINE_GRADE_CONFIG;
 
     return disciplineGradeConfig;
+  }
+
+  async updateStudentsGrades(
+    periodGuid: string,
+    disciplineGuid: string,
+    data: StudentGradeDTO[]
+  ) {
+    const config =
+      (await this.findDisciplineGradeConfig(periodGuid, disciplineGuid)) ??
+      this.DEFAULT_DISCIPLINE_GRADE_CONFIG;
+
+    for (let i = 0; i < data.length; i += 1) {
+      const studentGrade = data[i];
+
+      const hasAllGradeItems = config.gradeItems.every((item) =>
+        studentGrade.gradeItems.some(
+          ({ gradeItemGuid }) => gradeItemGuid === item.guid
+        )
+      );
+
+      if (!hasAllGradeItems) throw new AppError(ErrorMessages.MSGE06);
+    }
+
+    const studentGrades = await prismaClient.studentGrade.findMany({
+      where: {
+        periodGuid,
+        disciplineGuid,
+      },
+      include: {
+        studentGradeItems: true,
+      },
+    });
+
+    for await (const studentGrade of data) {
+      const existingGrade = studentGrades.find(
+        (grade) => grade.studentGuid === studentGrade.studentGuid
+      );
+
+      const valuesToSum = studentGrade.gradeItems.filter(
+        (item) => item.type === GradeItemType.sum
+      );
+      const valuesToAverage = studentGrade.gradeItems.filter(
+        (item) => item.type === GradeItemType.average
+      );
+
+      const average =
+        valuesToAverage.reduce((acc, item) => acc + item.value, 0) /
+        valuesToAverage.length;
+
+      const sum = valuesToSum.reduce((acc, item) => acc + item.value, 0);
+
+      const total = Number((average + sum).toFixed(1));
+
+      if (!existingGrade) {
+        const createdGrade = await prismaClient.studentGrade.create({
+          data: {
+            periodGuid,
+            disciplineGuid,
+            studentGuid: studentGrade.studentGuid,
+            finalValue: total > 10 ? 10 : total,
+          },
+        });
+
+        await prismaClient.$transaction(
+          studentGrade.gradeItems.map((item) =>
+            prismaClient.studentGradeItem.create({
+              data: {
+                studentGradeGuid: createdGrade.guid,
+                gradeItemGuid: item.guid,
+                value: item.value,
+              },
+            })
+          )
+        );
+      } else {
+        const itemsToCreate = studentGrade.gradeItems.filter(
+          (item) => !item.guid
+        );
+        const itemsToDelete = existingGrade.studentGradeItems.filter(
+          (item) => !studentGrade.gradeItems.find((i) => i.guid === item.guid)
+        );
+        const itemsToUpdate = studentGrade.gradeItems.flatMap((item) => {
+          if (!item.guid) return [];
+
+          const currentItem = existingGrade.studentGradeItems.find(
+            (i) => i.guid === item.guid
+          );
+
+          if (JSON.stringify(currentItem) === JSON.stringify(item)) return [];
+
+          return item;
+        });
+
+        if (itemsToCreate.length) {
+          await prismaClient.$transaction(
+            itemsToCreate.map((item) =>
+              prismaClient.studentGradeItem.create({
+                data: {
+                  studentGradeGuid: existingGrade.guid,
+                  gradeItemGuid: item.guid,
+                  value: item.value,
+                },
+              })
+            )
+          );
+        }
+
+        if (itemsToDelete.length) {
+          await prismaClient.studentGradeItem.deleteMany({
+            where: {
+              studentGradeGuid: existingGrade.guid,
+              gradeItemGuid: {
+                in: itemsToDelete.map((item) => item.guid),
+              },
+            },
+          });
+        }
+
+        if (itemsToUpdate.length) {
+          await prismaClient.$transaction(
+            itemsToUpdate.map((item) =>
+              prismaClient.studentGradeItem.update({
+                where: {
+                  guid: item.guid,
+                },
+                data: {
+                  value: item.value,
+                },
+              })
+            )
+          );
+        }
+
+        await prismaClient.studentGrade.update({
+          where: {
+            guid: existingGrade.guid,
+          },
+          data: {
+            finalValue: total > 10 ? 10 : total,
+          },
+        });
+      }
+    }
+
+    const dataToReturn = await this.findStudentsGrades(
+      periodGuid,
+      disciplineGuid
+    );
+
+    return dataToReturn;
+  }
+
+  async findStudentsGrades(periodGuid: string, disciplineGuid: string) {
+    const grades = await prismaClient.studentGrade.findMany({
+      where: {
+        periodGuid,
+        disciplineGuid,
+      },
+      select: {
+        guid: true,
+        finalValue: true,
+        studentGuid: true,
+        student: {
+          select: {
+            name: true,
+          },
+        },
+        studentGradeItems: {
+          select: {
+            guid: true,
+            value: true,
+            gradeItemGuid: true,
+            gradeItem: {
+              select: {
+                name: true,
+                maxValue: true,
+                type: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const dataToReturn: StudentGradeDTO[] = grades.map(
+      ({ guid: gradeGuid, studentGuid, finalValue, studentGradeItems }) => ({
+        guid: gradeGuid,
+        studentGuid,
+        finalValue,
+        gradeItems: studentGradeItems.map(
+          ({ guid, value, gradeItemGuid, gradeItem }) => ({
+            guid,
+            value,
+            gradeItemGuid,
+            name: gradeItem.name,
+            maxValue: gradeItem.maxValue,
+            type: gradeItem.type as GradeItemType,
+          })
+        ),
+      })
+    );
+
+    return dataToReturn;
   }
 }

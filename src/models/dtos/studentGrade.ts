@@ -1,6 +1,9 @@
+import { GradeItemType } from '.';
+
 export interface StudentGradeItem {
   guid?: string;
   gradeItemGuid: string;
+  type: GradeItemType;
   name?: string;
   value: number;
 }
