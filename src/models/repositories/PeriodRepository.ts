@@ -1120,7 +1120,30 @@ export class PeriodRepository implements IRepository {
         },
       });
 
-    if (!disciplineGradeConfig) return this.DEFAULT_DISCIPLINE_GRADE_CONFIG;
+    if (!disciplineGradeConfig) {
+      const newConfig = await prismaClient.disciplineGradeConfig.create({
+        data: {
+          periodGuid,
+          disciplineGuid,
+          gradeItems: {
+            create: this.DEFAULT_DISCIPLINE_GRADE_CONFIG.gradeItems[0],
+          },
+        },
+        select: {
+          guid: true,
+          gradeItems: {
+            select: {
+              guid: true,
+              name: true,
+              type: true,
+              maxValue: true,
+            },
+          },
+        },
+      });
+
+      return newConfig;
+    }
 
     return disciplineGradeConfig;
   }
@@ -1130,9 +1153,10 @@ export class PeriodRepository implements IRepository {
     disciplineGuid: string,
     data: StudentGradeDTO[]
   ) {
-    const config =
-      (await this.findDisciplineGradeConfig(periodGuid, disciplineGuid)) ??
-      this.DEFAULT_DISCIPLINE_GRADE_CONFIG;
+    const config = await this.findDisciplineGradeConfig(
+      periodGuid,
+      disciplineGuid
+    );
 
     for (let i = 0; i < data.length; i += 1) {
       const studentGrade = data[i];
@@ -1191,7 +1215,7 @@ export class PeriodRepository implements IRepository {
             prismaClient.studentGradeItem.create({
               data: {
                 studentGradeGuid: createdGrade.guid,
-                gradeItemGuid: item.guid,
+                gradeItemGuid: item.gradeItemGuid,
                 value: item.value,
               },
             })
@@ -1305,12 +1329,24 @@ export class PeriodRepository implements IRepository {
           },
         },
       },
+      orderBy: {
+        student: {
+          name: 'asc',
+        },
+      },
     });
 
     const dataToReturn: StudentGradeDTO[] = grades.map(
-      ({ guid: gradeGuid, studentGuid, finalValue, studentGradeItems }) => ({
+      ({
         guid: gradeGuid,
         studentGuid,
+        finalValue,
+        studentGradeItems,
+        student,
+      }) => ({
+        guid: gradeGuid,
+        studentGuid,
+        studentName: student.name,
         finalValue,
         gradeItems: studentGradeItems.map(
           ({ guid, value, gradeItemGuid, gradeItem }) => ({

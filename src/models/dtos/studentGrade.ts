@@ -24,4 +24,5 @@ export interface UpdateStudentGradeDTO extends StudentGradeBase {
 
 export interface StudentGradeDTO extends UpdateStudentGradeDTO {
   finalValue: number;
+  studentName: string;
 }
