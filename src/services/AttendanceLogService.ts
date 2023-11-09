@@ -20,11 +20,13 @@ export class AttendanceLogService implements Omit<IService, 'list'> {
     return updatedAttendanceLog;
   }
 
-  async list(args: FindAllArgs, periodGuid: string, disciplineGuid: string) {
+  async list(
+    args: FindAllArgs & { periodGuid: string; disciplineGuid: string }
+  ) {
     const result = await this.attendanceLogRepository.findAll(
       args,
-      periodGuid,
-      disciplineGuid
+      args.periodGuid,
+      args.disciplineGuid
     );
 
     return result;

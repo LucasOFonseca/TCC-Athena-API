@@ -233,18 +233,17 @@ export class AttendanceLogRepository implements Omit<IRepository, 'findAll'> {
   }
 
   async findAll(args: FindAllArgs, periodGuid: string, disciplineGuid: string) {
+    const where = {
+      periodGuid,
+      disciplineGuid,
+    };
+
     const totalItems = await prismaClient.attendanceLog.count({
-      where: {
-        periodGuid,
-        disciplineGuid,
-      },
+      where,
     });
 
     const data = await prismaClient.attendanceLog.findMany({
-      where: {
-        periodGuid,
-        disciplineGuid,
-      },
+      where,
       select: {
         guid: true,
         classDate: true,
