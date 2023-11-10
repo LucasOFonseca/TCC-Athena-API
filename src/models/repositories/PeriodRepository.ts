@@ -1007,7 +1007,7 @@ export class PeriodRepository implements IRepository {
               maxValue: true,
             },
             orderBy: {
-              createdAt: 'desc',
+              createdAt: 'asc',
             },
           },
         },
@@ -1094,7 +1094,7 @@ export class PeriodRepository implements IRepository {
             maxValue: true,
           },
           orderBy: {
-            createdAt: 'desc',
+            createdAt: 'asc',
           },
         },
       },
@@ -1246,7 +1246,7 @@ export class PeriodRepository implements IRepository {
               prismaClient.studentGradeItem.create({
                 data: {
                   studentGradeGuid: existingGrade.guid,
-                  gradeItemGuid: item.guid,
+                  gradeItemGuid: item.gradeItemGuid,
                   value: item.value,
                 },
               })
