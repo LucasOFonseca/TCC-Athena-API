@@ -6,6 +6,7 @@ import {
   EnrollStudentsController,
   GetDisciplineGradeConfigController,
   GetPeriodDetailsController,
+  GetSimplifiedPeriodController,
   GetStudentsGradesController,
   ListPeriodEnrollmentsController,
   ListPeriodsController,
@@ -20,6 +21,7 @@ const createPeriodController = new CreatePeriodController();
 const listPeriodsController = new ListPeriodsController();
 const updatePeriodController = new UpdatePeriodController();
 const getPeriodDetailsController = new GetPeriodDetailsController();
+const getSimplifiedPeriodController = new GetSimplifiedPeriodController();
 const cancelPeriodController = new CancelPeriodController();
 const enrollStudentsController = new EnrollStudentsController();
 const listPeriodEnrollments = new ListPeriodEnrollmentsController();
@@ -35,6 +37,7 @@ const getStudentsGradesController = new GetStudentsGradesController();
 periodRoutes.post('/', createPeriodController.handle);
 periodRoutes.get('/', listPeriodsController.handle);
 periodRoutes.get('/:guid', getPeriodDetailsController.handle);
+periodRoutes.get('/:guid/simplified', getSimplifiedPeriodController.handle);
 periodRoutes.put('/:guid', updatePeriodController.handle);
 periodRoutes.patch('/:guid/cancel', cancelPeriodController.handle);
 periodRoutes.post('/:guid/enroll', enrollStudentsController.handle);

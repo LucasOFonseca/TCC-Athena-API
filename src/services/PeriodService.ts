@@ -43,6 +43,12 @@ export class PeriodService implements IService {
     return period;
   }
 
+  async findSimplifiedByGuid(guid: string) {
+    const period = await this.periodRepository.findSimplifiedByGuid(guid);
+
+    return period;
+  }
+
   async enrollStudents(guid: string, studentsGuidList: string[]) {
     const result = await this.periodRepository.enrollStudents(
       guid,

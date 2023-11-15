@@ -807,6 +807,74 @@ export class PeriodRepository implements IRepository {
     );
   }
 
+  async findSimplifiedByGuid(guid: string) {
+    const period = await prismaClient.period.findUnique({
+      where: { guid },
+      select: {
+        guid: true,
+        status: true,
+        classId: true,
+        disciplinesSchedule: {
+          include: {
+            schedules: {
+              orderBy: {
+                dayOfWeek: 'asc',
+              },
+            },
+            Discipline: {
+              select: {
+                name: true,
+              },
+            },
+            educator: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+        matrixModule: {
+          select: {
+            name: true,
+            Matrix: {
+              select: {
+                name: true,
+                course: {
+                  select: {
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!period) throw new AppError(ErrorMessages.MSGE05, 404);
+
+    return {
+      guid: period.guid,
+      status: period.status as PeriodStatus,
+      name: `${period.matrixModule.Matrix.course.name}/${
+        period.matrixModule.Matrix.name
+      } - ${period.matrixModule.name}${
+        period.classId ? ` (Turma ${period.classId})` : ''
+      }`,
+      disciplinesSchedule: period.disciplinesSchedule.map(
+        (disciplineSchedule) => ({
+          guid: disciplineSchedule.guid,
+          name: disciplineSchedule.Discipline.name,
+          educator: disciplineSchedule.educator.name,
+          schedules: parseArrayOfData(disciplineSchedule.schedules, [
+            'createdAt',
+            'updatedAt',
+          ]),
+        })
+      ),
+    };
+  }
+
   async enrollStudents(
     guid: string,
     studentsGuidList: string[]

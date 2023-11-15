@@ -4,6 +4,7 @@ export * from './CreatePeriodController';
 export * from './EnrollStudentsController';
 export * from './GetDisciplineGradeConfigController';
 export * from './GetPeriodDetailsController';
+export * from './GetSimplifiedPeriodController';
 export * from './GetStudentsGradesController';
 export * from './ListPeriodEnrollmentsController';
 export * from './ListPeriodsController';
