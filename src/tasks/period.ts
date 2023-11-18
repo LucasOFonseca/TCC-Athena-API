@@ -93,6 +93,7 @@ export const updatePeriodStatusTask = cron.schedule(
     }
   },
   {
+    runOnInit: true,
     timezone: 'America/Sao_Paulo',
   }
 );
