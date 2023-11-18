@@ -296,7 +296,7 @@ export class StudentRepository implements IRepository {
 
       return student;
     } catch {
-      throw new AppError(ErrorMessages.MSGE02);
+      throw new AppError(ErrorMessages.MSGE05, 404);
     }
   }
 

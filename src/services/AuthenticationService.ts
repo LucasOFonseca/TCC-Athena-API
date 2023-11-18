@@ -1,28 +1,35 @@
 import { compare } from 'bcrypt';
 import { sign } from 'jsonwebtoken';
 import { AppError, ErrorMessages } from '../infra/http/errors';
-import { EmployeeRepository } from '../models/repositories';
+import { EmployeeRepository, StudentRepository } from '../models/repositories';
 
 export class AuthenticationService {
   private employeeRepository = new EmployeeRepository();
+  private studentRepository = new StudentRepository();
 
   async execute(email: string, password: string) {
-    const employee = await this.employeeRepository.findByEmail(email);
+    let user = await this.employeeRepository.findByEmail(email);
 
-    const isValidPassword = await compare(password, employee.password);
-
-    if (!isValidPassword) {
-      throw new AppError(ErrorMessages.MSGE13);
+    if (!user) {
+      user = {
+        ...(await this.studentRepository.findByEmail(email)),
+        roles: [],
+      };
     }
+
+    const isValidPassword = await compare(password, user.password);
+
+    if (!isValidPassword) throw new AppError(ErrorMessages.MSGE13);
 
     const token = sign(
       {
-        email: employee.email,
-        roles: employee.roles,
+        name: user.name,
+        email: user.email,
+        roles: user.roles,
       },
       process.env.JWT_SECRET,
       {
-        subject: employee.guid,
+        subject: user.guid,
         expiresIn: process.env.JWT_EXPIRES_IN,
       }
     );

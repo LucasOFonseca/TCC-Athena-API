@@ -365,22 +365,20 @@ export class EmployeeRepository implements IRepository {
   }
 
   async findByEmail(email: string) {
-    try {
-      const employee = await prismaClient.employee.findUniqueOrThrow({
-        where: { email },
-        include: {
-          roles: {
-            select: {
-              role: true,
-            },
+    const employee = await prismaClient.employee.findUnique({
+      where: { email },
+      include: {
+        roles: {
+          select: {
+            role: true,
           },
         },
-      });
+      },
+    });
 
-      return { ...employee, roles: employee.roles.map((role) => role.role) };
-    } catch {
-      throw new AppError(ErrorMessages.MSGE02);
-    }
+    if (!employee) return undefined;
+
+    return { ...employee, roles: employee.roles.map((role) => role.role) };
   }
 
   async findByGuid(guid: string) {
