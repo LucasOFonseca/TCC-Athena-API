@@ -56,4 +56,13 @@ export class StudentService implements IService {
 
     return result;
   }
+
+  async getStudentPeriodMatrix(studentGuid: string, periodGuid: string) {
+    const result = await this.studentRepository.findStudentPeriodMatrix(
+      studentGuid,
+      periodGuid
+    );
+
+    return result;
+  }
 }

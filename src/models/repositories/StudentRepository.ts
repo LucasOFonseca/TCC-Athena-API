@@ -483,4 +483,59 @@ export class StudentRepository implements IRepository {
       ),
     };
   }
+
+  async findStudentPeriodMatrix(studentGuid: string, periodGuid: string) {
+    const studentPeriod = await prismaClient.period.findFirst({
+      where: {
+        guid: periodGuid,
+        status: {
+          not: PeriodStatus.canceled,
+        },
+        enrollments: {
+          some: {
+            studentGuid,
+          },
+        },
+      },
+      select: {
+        matrixModule: {
+          select: {
+            Matrix: {
+              select: {
+                name: true,
+                course: {
+                  select: {
+                    name: true,
+                  },
+                },
+                matrixModules: {
+                  select: {
+                    guid: true,
+                    name: true,
+                    disciplines: {
+                      select: {
+                        guid: true,
+                        name: true,
+                        workload: true,
+                        syllabus: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return {
+      course: studentPeriod.matrixModule.Matrix.course.name,
+      name: studentPeriod.matrixModule.Matrix.name,
+      totalWorkload: studentPeriod.matrixModule.Matrix.matrixModules
+        .flatMap(({ disciplines }) => disciplines)
+        .reduce((a, b) => a + b.workload, 0),
+      modules: studentPeriod.matrixModule.Matrix.matrixModules,
+    };
+  }
 }
