@@ -9,7 +9,12 @@ import {
   newPasswordEmailTemplate,
 } from '../../providers/mail/templates';
 import { Address, Student } from '../domains';
-import { CreateStudentDTO, GenericStatus, UpdateStudentDTO } from '../dtos';
+import {
+  CreateStudentDTO,
+  GenericStatus,
+  PeriodStatus,
+  UpdateStudentDTO,
+} from '../dtos';
 
 export class StudentRepository implements IRepository {
   async create({
@@ -254,7 +259,7 @@ export class StudentRepository implements IRepository {
           ]
         : undefined,
       status: {
-        equals: args?.filterByStatus,
+        equals: args?.filterByStatus as GenericStatus,
       },
     };
 
@@ -310,5 +315,172 @@ export class StudentRepository implements IRepository {
     } catch {
       throw new AppError(ErrorMessages.MSGE02);
     }
+  }
+
+  async findStudentPeriods(guid: string) {
+    const studentPeriods = await prismaClient.period.findMany({
+      where: {
+        status: {
+          not: PeriodStatus.canceled,
+        },
+        enrollments: {
+          some: {
+            studentGuid: guid,
+          },
+        },
+      },
+      select: {
+        guid: true,
+        classId: true,
+        status: true,
+        deadline: true,
+        matrixModule: {
+          select: {
+            name: true,
+            disciplines: {
+              select: {
+                guid: true,
+                name: true,
+              },
+            },
+            Matrix: {
+              select: {
+                name: true,
+                course: {
+                  select: {
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return studentPeriods.map((period) => ({
+      guid: period.guid,
+      name: `${period.matrixModule.Matrix.course.name}/${period.matrixModule.Matrix.name} - ${period.matrixModule.name} (Turma ${period.classId})`,
+      status: period.status,
+      deadline: period.deadline,
+      disciplines: period.matrixModule.disciplines,
+    }));
+  }
+
+  async findStudentPeriodDetails(studentGuid: string, periodGuid: string) {
+    const studentPeriod = await prismaClient.period.findFirst({
+      where: {
+        guid: periodGuid,
+        status: {
+          not: PeriodStatus.canceled,
+        },
+        enrollments: {
+          some: {
+            studentGuid,
+          },
+        },
+      },
+      select: {
+        guid: true,
+        classId: true,
+        enrollmentEndDate: true,
+        deadline: true,
+        enrollments: {
+          where: {
+            studentGuid,
+          },
+          select: {
+            enrollmentNumber: true,
+          },
+        },
+        matrixModule: {
+          select: {
+            name: true,
+            Matrix: {
+              select: {
+                name: true,
+                course: {
+                  select: {
+                    name: true,
+                  },
+                },
+              },
+            },
+            disciplines: {
+              select: {
+                guid: true,
+                name: true,
+                attendanceLogs: {
+                  where: {
+                    periodGuid,
+                    studentAbsences: {
+                      some: {
+                        studentGuid,
+                      },
+                    },
+                  },
+                  select: {
+                    studentAbsences: {
+                      select: {
+                        totalAbsences: true,
+                      },
+                    },
+                  },
+                },
+                studentGrades: {
+                  where: {
+                    studentGuid,
+                    periodGuid,
+                  },
+                  select: {
+                    studentGradeItems: {
+                      select: {
+                        guid: true,
+                        value: true,
+                        gradeItem: {
+                          select: {
+                            name: true,
+                          },
+                        },
+                      },
+                    },
+                    finalValue: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return {
+      guid: studentPeriod.guid,
+      classId: studentPeriod.classId,
+      course: studentPeriod.matrixModule.Matrix.course.name,
+      matrix: studentPeriod.matrixModule.Matrix.name,
+      module: studentPeriod.matrixModule.name,
+      classesStartDate: studentPeriod.enrollmentEndDate,
+      deadline: studentPeriod.deadline,
+      enrollmentNumber: studentPeriod.enrollments[0].enrollmentNumber,
+      disciplines: studentPeriod.matrixModule.disciplines.map(
+        ({ guid, name, attendanceLogs, studentGrades }) => ({
+          guid,
+          name,
+          totalAbsences: attendanceLogs
+            .flatMap(({ studentAbsences }) =>
+              studentAbsences.map(({ totalAbsences }) => totalAbsences)
+            )
+            .reduce((a, b) => a + b, 0),
+          finalGrade: studentGrades[0]?.finalValue ?? 0,
+          grades:
+            studentGrades[0]?.studentGradeItems.map((item) => ({
+              guid: item.guid,
+              name: item.gradeItem.name,
+              value: item.value,
+            })) ?? [],
+        })
+      ),
+    };
   }
 }

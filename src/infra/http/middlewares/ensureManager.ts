@@ -10,6 +10,7 @@ export async function ensureManager(
   const { roles } = req.user;
 
   if (
+    roles.length > 0 &&
     !roles.some(
       (role) =>
         role === EmployeeRole.principal ||
@@ -17,7 +18,7 @@ export async function ensureManager(
         role === EmployeeRole.secretary
     )
   ) {
-    throw new AppError(ErrorMessages.MSGE14, 403);
+    throw new AppError(ErrorMessages.MSGE14, 401);
   }
 
   next();

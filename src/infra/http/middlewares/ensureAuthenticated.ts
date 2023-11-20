@@ -1,7 +1,10 @@
 import { NextFunction, Request, Response } from 'express';
 import { verify } from 'jsonwebtoken';
 import { GenericStatus } from '../../../models/dtos';
-import { EmployeeRepository } from '../../../models/repositories';
+import {
+  EmployeeRepository,
+  StudentRepository,
+} from '../../../models/repositories';
 import { AppError, ErrorMessages } from '../errors';
 
 interface Payload {
@@ -25,16 +28,21 @@ export async function ensureAuthenticated(
     const { sub: guid } = verify(token, process.env.JWT_SECRET) as Payload;
 
     const employeeRepository = new EmployeeRepository();
+    const studentRepository = new StudentRepository();
 
-    const employee = await employeeRepository.findByGuid(guid);
+    let user = await employeeRepository.findByGuid(guid);
 
-    if (employee.status === GenericStatus.inactive) {
+    if (!user) {
+      user = { ...(await studentRepository.findByGuid(guid)), roles: [] };
+    }
+
+    if (user.status === GenericStatus.inactive) {
       throw new AppError(ErrorMessages.MSGE14, 401);
     }
 
     req.user = {
       guid,
-      roles: employee.roles,
+      roles: user.roles,
     };
 
     next();

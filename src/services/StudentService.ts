@@ -41,4 +41,19 @@ export class StudentService implements IService {
 
     return result;
   }
+
+  async listStudentPeriods(guid: string) {
+    const result = await this.studentRepository.findStudentPeriods(guid);
+
+    return result;
+  }
+
+  async getStudentPeriodDetails(studentGuid: string, periodGuid: string) {
+    const result = await this.studentRepository.findStudentPeriodDetails(
+      studentGuid,
+      periodGuid
+    );
+
+    return result;
+  }
 }
