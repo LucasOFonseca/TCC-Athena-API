@@ -449,6 +449,12 @@ export class EmployeeRepository implements IRepository {
         matrixModule: {
           select: {
             name: true,
+            disciplines: {
+              select: {
+                guid: true,
+                name: true,
+              },
+            },
             Matrix: {
               select: {
                 name: true,
@@ -467,6 +473,7 @@ export class EmployeeRepository implements IRepository {
     return employeePeriods.map((period) => ({
       guid: period.guid,
       name: `${period.matrixModule.Matrix.course.name}/${period.matrixModule.Matrix.name} - ${period.matrixModule.name} (Turma ${period.classId})`,
+      disciplines: period.matrixModule.disciplines,
     }));
   }
 
