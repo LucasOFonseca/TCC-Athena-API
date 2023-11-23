@@ -25,6 +25,7 @@ export class AuthenticationService {
       {
         name: user.name,
         email: user.email,
+        cpf: user.cpf,
         roles: user.roles,
       },
       process.env.JWT_SECRET,
