@@ -65,4 +65,11 @@ export class StudentService implements IService {
 
     return result;
   }
+
+  async getStudentAvailableCourseCertificates(guid: string) {
+    const result =
+      await this.studentRepository.findStudentAvailableCourseCertificates(guid);
+
+    return result;
+  }
 }

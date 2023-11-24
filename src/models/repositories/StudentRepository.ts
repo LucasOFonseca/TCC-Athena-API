@@ -538,4 +538,100 @@ export class StudentRepository implements IRepository {
       modules: studentPeriod.matrixModule.Matrix.matrixModules,
     };
   }
+
+  async findStudentAvailableCourseCertificates(studentGuid: string) {
+    const courses = await prismaClient.course.findMany({
+      where: {
+        enrollments: {
+          some: {
+            studentGuid,
+          },
+        },
+        matrices: {
+          some: {
+            matrixModules: {
+              every: {
+                disciplines: {
+                  every: {
+                    studentGrades: {
+                      some: {
+                        studentGuid,
+                        finalValue: {
+                          gte: 6,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      select: {
+        guid: true,
+        name: true,
+        enrollments: {
+          where: {
+            studentGuid,
+          },
+          select: {
+            enrollmentNumber: true,
+          },
+        },
+        matrices: {
+          where: {
+            matrixModules: {
+              every: {
+                disciplines: {
+                  every: {
+                    studentGrades: {
+                      some: {
+                        studentGuid,
+                        finalValue: {
+                          gte: 6,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          select: {
+            matrixModules: {
+              select: {
+                disciplines: {
+                  select: {
+                    workload: true,
+                  },
+                },
+                Period: {
+                  select: {
+                    deadline: true,
+                  },
+                  orderBy: {
+                    deadline: 'desc',
+                  },
+                },
+              },
+              orderBy: {
+                createdAt: 'desc',
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return courses.map(({ guid, name, enrollments, matrices }) => ({
+      guid,
+      name,
+      enrollmentNumber: enrollments[0].enrollmentNumber,
+      finishDate: matrices[0].matrixModules[0].Period[0].deadline,
+      totalWorkload: matrices[0].matrixModules
+        .flatMap(({ disciplines }) => disciplines)
+        .reduce((a, b) => a + b.workload, 0),
+    }));
+  }
 }
