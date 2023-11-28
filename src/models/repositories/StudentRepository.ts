@@ -1,5 +1,9 @@
 import bcrypt from 'bcrypt';
-import { excludeFields, generatePassword } from '../../helpers/utils';
+import {
+  allDaysOfWeek,
+  excludeFields,
+  generatePassword,
+} from '../../helpers/utils';
 import { AppError, ErrorMessages } from '../../infra/http/errors';
 import { prismaClient } from '../../infra/prisma';
 import { FindAllArgs, IRepository } from '../../interfaces';
@@ -14,6 +18,7 @@ import {
   EmployeeRole,
   GenericStatus,
   PeriodStatus,
+  Shift,
   UpdateStudentDTO,
 } from '../dtos';
 
@@ -648,5 +653,211 @@ export class StudentRepository implements IRepository {
         .reduce((a, b) => a + b.workload, 0),
       principalName: principal.name,
     }));
+  }
+
+  async findStudentSchedules(guid: string) {
+    const periods = await prismaClient.period.findMany({
+      where: {
+        status: {
+          notIn: [PeriodStatus.canceled, PeriodStatus.finished],
+        },
+        enrollments: {
+          some: {
+            studentGuid: guid,
+          },
+        },
+      },
+      select: {
+        matrixModule: {
+          select: {
+            Matrix: {
+              select: {
+                course: {
+                  select: {
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        disciplinesSchedule: {
+          select: {
+            Classroom: {
+              select: {
+                name: true,
+              },
+            },
+            Discipline: {
+              select: {
+                name: true,
+              },
+            },
+            educator: {
+              select: {
+                name: true,
+              },
+            },
+            schedules: {
+              select: {
+                guid: true,
+                classNumber: true,
+                dayOfWeek: true,
+                startTime: true,
+                endTime: true,
+                shift: {
+                  select: {
+                    shift: true,
+                  },
+                },
+              },
+              orderBy: {
+                startTime: 'desc',
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const morningSchedules = periods.flatMap(
+      ({ matrixModule, disciplinesSchedule }) => {
+        return disciplinesSchedule.flatMap((schedule) =>
+          schedule.schedules.some(({ shift }) => shift.shift === Shift.morning)
+            ? {
+                ...schedule,
+                course: matrixModule.Matrix.course.name,
+              }
+            : []
+        );
+      }
+    );
+
+    const afternoonSchedules = periods.flatMap(
+      ({ matrixModule, disciplinesSchedule }) => {
+        return disciplinesSchedule.flatMap((schedule) =>
+          schedule.schedules.some(
+            ({ shift }) => shift.shift === Shift.afternoon
+          )
+            ? {
+                ...schedule,
+                course: matrixModule.Matrix.course.name,
+              }
+            : []
+        );
+      }
+    );
+
+    const eveningSchedules = periods.flatMap(
+      ({ matrixModule, disciplinesSchedule }) => {
+        return disciplinesSchedule.flatMap((schedule) =>
+          schedule.schedules.some(({ shift }) => shift.shift === Shift.evening)
+            ? {
+                ...schedule,
+                course: matrixModule.Matrix.course.name,
+              }
+            : []
+        );
+      }
+    );
+
+    const morning = allDaysOfWeek
+      .map((day) => ({
+        dayOfWeek: day,
+        schedules: morningSchedules.flatMap(
+          ({ course, Classroom, schedules, Discipline, educator }) =>
+            schedules.flatMap(
+              ({
+                classNumber,
+                dayOfWeek,
+                startTime,
+                endTime,
+                guid: scheduleGuid,
+              }) => {
+                if (dayOfWeek !== day) return [];
+
+                return {
+                  guid: scheduleGuid,
+                  course,
+                  classNumber,
+                  classroom: Classroom.name,
+                  discipline: Discipline.name,
+                  educator: educator.name,
+                  startTime,
+                  endTime,
+                };
+              }
+            )
+        ),
+      }))
+      .filter(({ schedules }) => schedules.length > 0);
+
+    const afternoon = allDaysOfWeek
+      .map((day) => ({
+        dayOfWeek: day,
+        schedules: afternoonSchedules.flatMap(
+          ({ course, Classroom, schedules, Discipline, educator }) =>
+            schedules.flatMap(
+              ({
+                classNumber,
+                dayOfWeek,
+                startTime,
+                endTime,
+                guid: scheduleGuid,
+              }) => {
+                if (dayOfWeek !== day) return [];
+
+                return {
+                  guid: scheduleGuid,
+                  course,
+                  classNumber,
+                  classroom: Classroom.name,
+                  discipline: Discipline.name,
+                  educator: educator.name,
+                  startTime,
+                  endTime,
+                };
+              }
+            )
+        ),
+      }))
+      .filter(({ schedules }) => schedules.length > 0);
+
+    const evening = allDaysOfWeek
+      .map((day) => ({
+        dayOfWeek: day,
+        schedules: eveningSchedules.flatMap(
+          ({ course, Classroom, schedules, Discipline, educator }) =>
+            schedules.flatMap(
+              ({
+                classNumber,
+                dayOfWeek,
+                startTime,
+                endTime,
+                guid: scheduleGuid,
+              }) => {
+                if (dayOfWeek !== day) return [];
+
+                return {
+                  guid: scheduleGuid,
+                  course,
+                  classNumber,
+                  classroom: Classroom.name,
+                  discipline: Discipline.name,
+                  educator: educator.name,
+                  startTime,
+                  endTime,
+                };
+              }
+            )
+        ),
+      }))
+      .filter(({ schedules }) => schedules.length > 0);
+
+    return {
+      morning: morning.length > 0 ? morning : undefined,
+      afternoon: afternoon.length > 0 ? afternoon : undefined,
+      evening: evening.length > 0 ? evening : undefined,
+    };
   }
 }

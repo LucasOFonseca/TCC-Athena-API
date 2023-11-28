@@ -72,4 +72,10 @@ export class StudentService implements IService {
 
     return result;
   }
+
+  async getStudentSchedules(guid: string) {
+    const result = await this.studentRepository.findStudentSchedules(guid);
+
+    return result;
+  }
 }

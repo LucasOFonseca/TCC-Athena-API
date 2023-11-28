@@ -4,6 +4,7 @@ import {
   CreateStudentController,
   GetStudentPeriodDetailsController,
   GetStudentPeriodMatrixController,
+  GetStudentSchedulesController,
   ListStudentAvailableCourseCertificatesController,
   ListStudentPeriodsController,
   ListStudentsController,
@@ -21,6 +22,7 @@ const listStudentAvailableCourseCertificatesController =
 const getStudentPeriodDetailsController =
   new GetStudentPeriodDetailsController();
 const getStudentPeriodMatrixController = new GetStudentPeriodMatrixController();
+const getStudentSchedulesController = new GetStudentSchedulesController();
 const updateStudentController = new UpdateStudentController();
 const resetStudentPasswordController = new ResetStudentPasswordController();
 const changeStudentStatusController = new ChangeStudentStatusController();
@@ -40,6 +42,7 @@ studentRoutes.get(
   '/periods/:periodGuid/matrix',
   getStudentPeriodMatrixController.handle
 );
+studentRoutes.get('/schedules', getStudentSchedulesController.handle);
 studentRoutes.put('/:guid', updateStudentController.handle);
 studentRoutes.put(
   '/:guid/reset-password',
