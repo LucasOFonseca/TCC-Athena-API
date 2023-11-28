@@ -11,6 +11,7 @@ import {
 import { Address, Student } from '../domains';
 import {
   CreateStudentDTO,
+  EmployeeRole,
   GenericStatus,
   PeriodStatus,
   UpdateStudentDTO,
@@ -540,6 +541,19 @@ export class StudentRepository implements IRepository {
   }
 
   async findStudentAvailableCourseCertificates(studentGuid: string) {
+    const principal = await prismaClient.employee.findFirst({
+      where: {
+        roles: {
+          some: {
+            role: EmployeeRole.principal,
+          },
+        },
+      },
+      select: {
+        name: true,
+      },
+    });
+
     const courses = await prismaClient.course.findMany({
       where: {
         enrollments: {
@@ -632,6 +646,7 @@ export class StudentRepository implements IRepository {
       totalWorkload: matrices[0].matrixModules
         .flatMap(({ disciplines }) => disciplines)
         .reduce((a, b) => a + b.workload, 0),
+      principalName: principal.name,
     }));
   }
 }
