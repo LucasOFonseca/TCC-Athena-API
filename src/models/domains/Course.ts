@@ -5,6 +5,7 @@ import { GenericStatus } from '../dtos';
 export class Course {
   constructor(
     private _name: string,
+    private _minPassingGrade: number,
     private _guid?: string,
     private _status?: GenericStatus
   ) {}
@@ -15,6 +16,14 @@ export class Course {
 
   set name(name: string) {
     this._name = name;
+  }
+
+  get minPassingGrade() {
+    return this._minPassingGrade;
+  }
+
+  set minPassingGrade(minPassingGrade) {
+    this._minPassingGrade = minPassingGrade;
   }
 
   get guid() {
@@ -36,6 +45,7 @@ export class Course {
   toJSON() {
     return {
       name: this.name,
+      minPassingGrade: this.minPassingGrade,
       guid: this.guid,
       status: this.status,
     };
@@ -52,6 +62,10 @@ export class Course {
           .string({ required_error: ErrorMessages.MSGE01 })
           .min(3, ErrorMessages.MSGE08)
           .max(120, ErrorMessages.MSGE09),
+        minPassingGrade: z
+          .number({ required_error: ErrorMessages.MSGE01 })
+          .min(1, ErrorMessages.MSGE10)
+          .max(10, ErrorMessages.MSGE11),
       })
       .partial({ guid: true, status: true });
 

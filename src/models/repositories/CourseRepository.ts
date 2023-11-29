@@ -11,16 +11,14 @@ import {
 } from '../dtos';
 
 export class CourseRepository implements IRepository {
-  async create({ name }: CreateCourseDTO) {
+  async create({ name, minPassingGrade }: CreateCourseDTO) {
     const existingCourse = await prismaClient.course.findUnique({
       where: { name },
     });
 
-    if (existingCourse) {
-      throw new AppError(ErrorMessages.MSGE02);
-    }
+    if (existingCourse) throw new AppError(ErrorMessages.MSGE02);
 
-    const course = new Course(name);
+    const course = new Course(name, minPassingGrade);
 
     course.validate();
 
@@ -41,11 +39,14 @@ export class CourseRepository implements IRepository {
 
       const course = new Course(
         courseToUpdate.name,
+        courseToUpdate.minPassingGrade,
         courseToUpdate.guid,
         courseToUpdate.status as GenericStatus
       );
 
       if (data.name !== undefined) course.name = data.name;
+      if (data.minPassingGrade !== undefined)
+        course.minPassingGrade = data.minPassingGrade;
       if (data.status !== undefined) course.status = data.status;
 
       course.validate();
@@ -55,9 +56,7 @@ export class CourseRepository implements IRepository {
           where: { name: course.name },
         });
 
-        if (existingCourse) {
-          throw new AppError(ErrorMessages.MSGE02);
-        }
+        if (existingCourse) throw new AppError(ErrorMessages.MSGE02);
       }
 
       if (
@@ -97,7 +96,7 @@ export class CourseRepository implements IRepository {
           ]
         : undefined,
       status: {
-        equals: args?.filterByStatus,
+        equals: args?.filterByStatus as GenericStatus,
       },
     };
 
