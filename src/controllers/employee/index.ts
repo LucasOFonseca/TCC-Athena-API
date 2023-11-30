@@ -1,5 +1,6 @@
 export * from './ChangeEmployeeStatusController';
 export * from './CreateEmployeeController';
+export * from './ListEducatorSchedulesController';
 export * from './ListEmployeeDisciplinesByPeriodController';
 export * from './ListEmployeePeriodsController';
 export * from './ListEmployeeSchedulesController';

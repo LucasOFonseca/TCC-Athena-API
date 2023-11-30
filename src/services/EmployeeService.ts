@@ -49,6 +49,12 @@ export class EmployeeService implements IService {
     return result;
   }
 
+  async listEducatorSchedules(guid: string) {
+    const result = await this.employeeRepository.findEducatorSchedules(guid);
+
+    return result;
+  }
+
   async listEmployeePeriods(guid: string) {
     const result = await this.employeeRepository.findEmployeePeriods(guid);
 

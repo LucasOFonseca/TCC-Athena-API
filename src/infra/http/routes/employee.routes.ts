@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   ChangeEmployeeStatusController,
   CreateEmployeeController,
+  ListEducatorSchedulesController,
   ListEmployeeDisciplinesByPeriodController,
   ListEmployeePeriodsController,
   ListEmployeeSchedulesController,
@@ -15,6 +16,7 @@ const employeeRoutes = Router();
 const createEmployeeController = new CreateEmployeeController();
 const listEmployeesController = new ListEmployeesController();
 const listEmployeeSchedulesController = new ListEmployeeSchedulesController();
+const listEducatorSchedulesController = new ListEducatorSchedulesController();
 const listEmployeePeriodsController = new ListEmployeePeriodsController();
 const listEmployeeDisciplinesByPeriodController =
   new ListEmployeeDisciplinesByPeriodController();
@@ -25,6 +27,10 @@ const changeEmployeeStatusController = new ChangeEmployeeStatusController();
 employeeRoutes.post('/', createEmployeeController.handle);
 employeeRoutes.get('/', listEmployeesController.handle);
 employeeRoutes.get('/:guid/schedules', listEmployeeSchedulesController.handle);
+employeeRoutes.get(
+  '/:guid/educator/schedules',
+  listEducatorSchedulesController.handle
+);
 employeeRoutes.get('/periods', listEmployeePeriodsController.handle);
 employeeRoutes.get(
   '/periods/:periodGuid/disciplines',

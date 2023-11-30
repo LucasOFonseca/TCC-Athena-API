@@ -18,3 +18,4 @@ export * from './status';
 export * from './student';
 export * from './studentEnrollment';
 export * from './studentGrade';
+export * from './studentGradeStatus';

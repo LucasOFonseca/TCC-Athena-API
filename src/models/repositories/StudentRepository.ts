@@ -1,6 +1,8 @@
+/* eslint-disable no-nested-ternary */
 import bcrypt from 'bcrypt';
 import {
   allDaysOfWeek,
+  compareClassSchedules,
   excludeFields,
   generatePassword,
 } from '../../helpers/utils';
@@ -19,6 +21,7 @@ import {
   GenericStatus,
   PeriodStatus,
   Shift,
+  StudentGradeStatus,
   UpdateStudentDTO,
 } from '../dtos';
 
@@ -408,49 +411,56 @@ export class StudentRepository implements IRepository {
                 course: {
                   select: {
                     name: true,
+                    minPassingGrade: true,
                   },
                 },
-              },
-            },
-            disciplines: {
-              select: {
-                guid: true,
-                name: true,
-                attendanceLogs: {
-                  where: {
-                    periodGuid,
-                    studentAbsences: {
-                      some: {
-                        studentGuid,
-                      },
-                    },
-                  },
+                matrixModules: {
                   select: {
-                    studentAbsences: {
-                      select: {
-                        totalAbsences: true,
-                      },
-                    },
-                  },
-                },
-                studentGrades: {
-                  where: {
-                    studentGuid,
-                    periodGuid,
-                  },
-                  select: {
-                    studentGradeItems: {
+                    guid: true,
+                    name: true,
+                    disciplines: {
                       select: {
                         guid: true,
-                        value: true,
-                        gradeItem: {
+                        name: true,
+                        attendanceLogs: {
+                          where: {
+                            periodGuid,
+                            studentAbsences: {
+                              some: {
+                                studentGuid,
+                              },
+                            },
+                          },
                           select: {
-                            name: true,
+                            studentAbsences: {
+                              select: {
+                                totalAbsences: true,
+                              },
+                            },
+                          },
+                        },
+                        studentGrades: {
+                          where: {
+                            studentGuid,
+                            periodGuid,
+                          },
+                          select: {
+                            studentGradeItems: {
+                              select: {
+                                guid: true,
+                                value: true,
+                                gradeItem: {
+                                  select: {
+                                    name: true,
+                                  },
+                                },
+                              },
+                            },
+                            finalValue: true,
                           },
                         },
                       },
                     },
-                    finalValue: true,
                   },
                 },
               },
@@ -465,26 +475,37 @@ export class StudentRepository implements IRepository {
       classId: studentPeriod.classId,
       course: studentPeriod.matrixModule.Matrix.course.name,
       matrix: studentPeriod.matrixModule.Matrix.name,
-      module: studentPeriod.matrixModule.name,
+      currentModuleName: studentPeriod.matrixModule.name,
       classesStartDate: studentPeriod.enrollmentEndDate,
       deadline: studentPeriod.deadline,
       enrollmentNumber: studentPeriod.enrollments[0].enrollmentNumber,
-      disciplines: studentPeriod.matrixModule.disciplines.map(
-        ({ guid, name, attendanceLogs, studentGrades }) => ({
-          guid,
-          name,
-          totalAbsences: attendanceLogs
-            .flatMap(({ studentAbsences }) =>
-              studentAbsences.map(({ totalAbsences }) => totalAbsences)
-            )
-            .reduce((a, b) => a + b, 0),
-          finalGrade: studentGrades[0]?.finalValue ?? 0,
-          grades:
-            studentGrades[0]?.studentGradeItems.map((item) => ({
-              guid: item.guid,
-              name: item.gradeItem.name,
-              value: item.value,
-            })) ?? [],
+      modules: studentPeriod.matrixModule.Matrix.matrixModules.map(
+        ({ disciplines, ...module }) => ({
+          ...module,
+          disciplines: disciplines.map(
+            ({ attendanceLogs, studentGrades, ...discipline }) => ({
+              ...discipline,
+              status:
+                studentGrades[0]?.finalValue === null
+                  ? StudentGradeStatus.pending
+                  : studentGrades[0]?.finalValue >=
+                    studentPeriod.matrixModule.Matrix.course.minPassingGrade
+                  ? StudentGradeStatus.pass
+                  : StudentGradeStatus.fail,
+              totalAbsences: attendanceLogs
+                .flatMap(({ studentAbsences }) =>
+                  studentAbsences.map(({ totalAbsences }) => totalAbsences)
+                )
+                .reduce((a, b) => a + b, 0),
+              finalGrade: studentGrades[0]?.finalValue ?? 0,
+              grades:
+                studentGrades[0]?.studentGradeItems.map((item) => ({
+                  guid: item.guid,
+                  name: item.gradeItem.name,
+                  value: item.value,
+                })) ?? [],
+            })
+          ),
         })
       ),
     };
@@ -712,7 +733,7 @@ export class StudentRepository implements IRepository {
                 },
               },
               orderBy: {
-                startTime: 'desc',
+                startTime: 'asc',
               },
             },
           },
@@ -764,8 +785,8 @@ export class StudentRepository implements IRepository {
     const morning = allDaysOfWeek
       .map((day) => ({
         dayOfWeek: day,
-        schedules: morningSchedules.flatMap(
-          ({ course, Classroom, schedules, Discipline, educator }) =>
+        schedules: morningSchedules
+          .flatMap(({ course, Classroom, schedules, Discipline, educator }) =>
             schedules.flatMap(
               ({
                 classNumber,
@@ -788,7 +809,8 @@ export class StudentRepository implements IRepository {
                 };
               }
             )
-        ),
+          )
+          .sort(compareClassSchedules),
       }))
       .filter(({ schedules }) => schedules.length > 0);
 
@@ -797,28 +819,30 @@ export class StudentRepository implements IRepository {
         dayOfWeek: day,
         schedules: afternoonSchedules.flatMap(
           ({ course, Classroom, schedules, Discipline, educator }) =>
-            schedules.flatMap(
-              ({
-                classNumber,
-                dayOfWeek,
-                startTime,
-                endTime,
-                guid: scheduleGuid,
-              }) => {
-                if (dayOfWeek !== day) return [];
-
-                return {
-                  guid: scheduleGuid,
-                  course,
+            schedules
+              .flatMap(
+                ({
                   classNumber,
-                  classroom: Classroom.name,
-                  discipline: Discipline.name,
-                  educator: educator.name,
+                  dayOfWeek,
                   startTime,
                   endTime,
-                };
-              }
-            )
+                  guid: scheduleGuid,
+                }) => {
+                  if (dayOfWeek !== day) return [];
+
+                  return {
+                    guid: scheduleGuid,
+                    course,
+                    classNumber,
+                    classroom: Classroom.name,
+                    discipline: Discipline.name,
+                    educator: educator.name,
+                    startTime,
+                    endTime,
+                  };
+                }
+              )
+              .sort(compareClassSchedules)
         ),
       }))
       .filter(({ schedules }) => schedules.length > 0);
@@ -828,28 +852,30 @@ export class StudentRepository implements IRepository {
         dayOfWeek: day,
         schedules: eveningSchedules.flatMap(
           ({ course, Classroom, schedules, Discipline, educator }) =>
-            schedules.flatMap(
-              ({
-                classNumber,
-                dayOfWeek,
-                startTime,
-                endTime,
-                guid: scheduleGuid,
-              }) => {
-                if (dayOfWeek !== day) return [];
-
-                return {
-                  guid: scheduleGuid,
-                  course,
+            schedules
+              .flatMap(
+                ({
                   classNumber,
-                  classroom: Classroom.name,
-                  discipline: Discipline.name,
-                  educator: educator.name,
+                  dayOfWeek,
                   startTime,
                   endTime,
-                };
-              }
-            )
+                  guid: scheduleGuid,
+                }) => {
+                  if (dayOfWeek !== day) return [];
+
+                  return {
+                    guid: scheduleGuid,
+                    course,
+                    classNumber,
+                    classroom: Classroom.name,
+                    discipline: Discipline.name,
+                    educator: educator.name,
+                    startTime,
+                    endTime,
+                  };
+                }
+              )
+              .sort(compareClassSchedules)
         ),
       }))
       .filter(({ schedules }) => schedules.length > 0);

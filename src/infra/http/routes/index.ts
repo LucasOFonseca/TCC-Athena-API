@@ -31,7 +31,7 @@ router.use(
   ensureManager,
   classScheduleRoutes
 );
-router.use('/employee', ensureAuthenticated, ensurePrincipal, employeeRoutes);
+router.use('/employee', ensureAuthenticated, employeeRoutes);
 router.use('/matrix', ensureAuthenticated, ensurePrincipal, matrixRoutes);
 router.use(
   '/attendance-log',
