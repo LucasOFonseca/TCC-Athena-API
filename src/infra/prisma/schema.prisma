@@ -237,8 +237,7 @@ model Enrollment {
   courseGuid       String   @map("course_guid")
   student          Student  @relation(fields: [studentGuid], references: [guid])
   studentGuid      String   @map("student_guid")
-  period           Period?  @relation(fields: [periodGuid], references: [guid])
-  periodGuid       String?  @map("period_guid")
+  periods          Period[]
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 

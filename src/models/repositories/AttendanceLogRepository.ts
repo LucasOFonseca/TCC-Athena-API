@@ -31,12 +31,14 @@ export class AttendanceLogRepository implements Omit<IRepository, 'findAll'> {
       const isEnrolled = await prismaClient.enrollment.findFirst({
         where: {
           studentGuid: studentAbsence.studentGuid,
-          periodGuid,
-          period: {
-            matrixModule: {
-              disciplines: {
-                some: {
-                  guid: disciplineGuid,
+          periods: {
+            some: {
+              guid: periodGuid,
+              matrixModule: {
+                disciplines: {
+                  some: {
+                    guid: disciplineGuid,
+                  },
                 },
               },
             },

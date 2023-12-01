@@ -495,9 +495,7 @@ export class EmployeeRepository implements IRepository {
 
       const morningSchedules = educator.disciplinesSchedule.flatMap(
         (schedule) =>
-          schedule.schedules.some(
-            ({ shift }) => shift.shift === Shift.afternoon
-          )
+          schedule.schedules.some(({ shift }) => shift.shift === Shift.morning)
             ? {
                 ...schedule,
                 course: schedule.period.matrixModule.Matrix.course.name,
@@ -517,7 +515,7 @@ export class EmployeeRepository implements IRepository {
 
       const eveningSchedules = educator.disciplinesSchedule.flatMap(
         (schedule) =>
-          schedule.schedules.some(({ shift }) => shift.shift === Shift.morning)
+          schedule.schedules.some(({ shift }) => shift.shift === Shift.evening)
             ? {
                 ...schedule,
                 course: schedule.period.matrixModule.Matrix.course.name,

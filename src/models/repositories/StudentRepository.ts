@@ -330,7 +330,7 @@ export class StudentRepository implements IRepository {
     const studentPeriods = await prismaClient.period.findMany({
       where: {
         status: {
-          not: PeriodStatus.canceled,
+          notIn: [PeriodStatus.finished, PeriodStatus.canceled],
         },
         enrollments: {
           some: {
@@ -424,7 +424,6 @@ export class StudentRepository implements IRepository {
                         name: true,
                         attendanceLogs: {
                           where: {
-                            periodGuid,
                             studentAbsences: {
                               some: {
                                 studentGuid,
@@ -442,9 +441,13 @@ export class StudentRepository implements IRepository {
                         studentGrades: {
                           where: {
                             studentGuid,
-                            periodGuid,
                           },
                           select: {
+                            period: {
+                              select: {
+                                status: true,
+                              },
+                            },
                             studentGradeItems: {
                               select: {
                                 guid: true,
@@ -461,6 +464,9 @@ export class StudentRepository implements IRepository {
                         },
                       },
                     },
+                  },
+                  orderBy: {
+                    createdAt: 'asc',
                   },
                 },
               },
@@ -486,7 +492,8 @@ export class StudentRepository implements IRepository {
             ({ attendanceLogs, studentGrades, ...discipline }) => ({
               ...discipline,
               status:
-                studentGrades[0]?.finalValue === null
+                studentGrades[0]?.finalValue === undefined ||
+                studentGrades[0]?.period.status !== PeriodStatus.finished
                   ? StudentGradeStatus.pending
                   : studentGrades[0]?.finalValue >=
                     studentPeriod.matrixModule.Matrix.course.minPassingGrade
@@ -547,6 +554,9 @@ export class StudentRepository implements IRepository {
                         syllabus: true,
                       },
                     },
+                  },
+                  orderBy: {
+                    createdAt: 'asc',
                   },
                 },
               },

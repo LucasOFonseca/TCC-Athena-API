@@ -342,7 +342,7 @@ export class PeriodRepository implements IRepository {
       );
     if (data.status !== undefined) period.status = data.status;
 
-    period.validate();
+    if (period.status !== PeriodStatus.canceled) period.validate();
 
     if (
       period.status === PeriodStatus.canceled &&
@@ -394,7 +394,8 @@ export class PeriodRepository implements IRepository {
         period.classroomGuid,
         period.shiftGuid,
         period.vacancies,
-        disciplinesSchedule
+        disciplinesSchedule,
+        periodToUpdate.guid
       );
     }
 
@@ -476,7 +477,7 @@ export class PeriodRepository implements IRepository {
         for await (const employeeGuid of allSelectedEmployeesGuidList) {
           await this.validator.checkEmployeeAvailability(
             employeeGuid,
-            disciplinesSchedule
+            disciplinesSchedule.filter((s) => s.employeeGuid === employeeGuid)
           );
         }
 
@@ -884,7 +885,25 @@ export class PeriodRepository implements IRepository {
       include: {
         matrixModule: {
           include: {
-            Matrix: { include: { course: { include: { enrollments: true } } } },
+            Matrix: {
+              include: {
+                course: {
+                  include: {
+                    enrollments: {
+                      select: {
+                        guid: true,
+                        studentGuid: true,
+                        periods: {
+                          select: {
+                            guid: true,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
         },
       },
@@ -919,13 +938,17 @@ export class PeriodRepository implements IRepository {
       );
 
       if (currentStudentEnrollment) {
-        if (currentStudentEnrollment.periodGuid === period.guid)
+        if (currentStudentEnrollment.periods.some((p) => p.guid === guid))
           throw new AppError(ErrorMessages.MSGE02);
 
         await prismaClient.enrollment.update({
           where: { guid: currentStudentEnrollment.guid },
           data: {
-            periodGuid: period.guid,
+            periods: {
+              connect: {
+                guid,
+              },
+            },
           },
         });
       } else {
@@ -933,8 +956,12 @@ export class PeriodRepository implements IRepository {
           data: {
             courseGuid,
             studentGuid,
-            periodGuid: guid,
             enrollmentNumber: generateEnrollmentNumber(),
+            periods: {
+              connect: {
+                guid,
+              },
+            },
           },
         });
       }
@@ -942,7 +969,11 @@ export class PeriodRepository implements IRepository {
 
     const periodEnrollments = await prismaClient.enrollment.findMany({
       where: {
-        periodGuid: period.guid,
+        periods: {
+          some: {
+            guid,
+          },
+        },
       },
       include: {
         student: { select: { guid: true, name: true } },
@@ -990,14 +1021,21 @@ export class PeriodRepository implements IRepository {
   }
 
   async cancelEnrollment(periodGuid: string, enrollmentGuid: string) {
-    const enrollmentToDelete = await prismaClient.enrollment.findFirst({
-      where: { guid: enrollmentGuid, periodGuid },
+    const enrollmentToCancel = await prismaClient.enrollment.findFirst({
+      where: { guid: enrollmentGuid, periods: { some: { guid: periodGuid } } },
     });
 
-    if (!enrollmentToDelete) throw new AppError(ErrorMessages.MSGE05, 404);
+    if (!enrollmentToCancel) throw new AppError(ErrorMessages.MSGE05, 404);
 
-    await prismaClient.enrollment.delete({
+    await prismaClient.enrollment.update({
       where: { guid: enrollmentGuid },
+      data: {
+        periods: {
+          disconnect: {
+            guid: periodGuid,
+          },
+        },
+      },
     });
   }
 
@@ -1184,6 +1222,9 @@ export class PeriodRepository implements IRepository {
               type: true,
               maxValue: true,
             },
+            orderBy: {
+              createdAt: 'asc',
+            },
           },
         },
       });
@@ -1205,6 +1246,9 @@ export class PeriodRepository implements IRepository {
               name: true,
               type: true,
               maxValue: true,
+            },
+            orderBy: {
+              createdAt: 'asc',
             },
           },
         },
@@ -1393,6 +1437,11 @@ export class PeriodRepository implements IRepository {
                 maxValue: true,
                 type: true,
               },
+            },
+          },
+          orderBy: {
+            gradeItem: {
+              createdAt: 'asc',
             },
           },
         },

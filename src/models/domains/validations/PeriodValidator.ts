@@ -6,6 +6,7 @@ import {
   DisciplineScheduleDTO,
   EmployeeRole,
   GenericStatus,
+  PeriodStatus,
 } from '../../dtos';
 
 export class PeriodValidator {
@@ -40,7 +41,8 @@ export class PeriodValidator {
     classroomGuid: string,
     shiftGuid: string,
     vacancies: number,
-    disciplinesSchedule?: DisciplineSchedule[]
+    disciplinesSchedule?: DisciplineSchedule[],
+    currentPeriodGuid?: string
   ) {
     const selectedClassroom = await prismaClient.classroom.findUnique({
       where: { guid: classroomGuid },
@@ -50,6 +52,18 @@ export class PeriodValidator {
             schedules: true,
           },
           where: {
+            period: {
+              guid: {
+                not: currentPeriodGuid,
+              },
+              status: {
+                notIn: [
+                  PeriodStatus.draft,
+                  PeriodStatus.finished,
+                  PeriodStatus.canceled,
+                ],
+              },
+            },
             schedules: {
               some: {
                 shiftGuid,
@@ -103,6 +117,17 @@ export class PeriodValidator {
           },
         },
         disciplinesSchedule: {
+          where: {
+            period: {
+              status: {
+                notIn: [
+                  PeriodStatus.draft,
+                  PeriodStatus.finished,
+                  PeriodStatus.canceled,
+                ],
+              },
+            },
+          },
           include: {
             schedules: true,
           },
@@ -122,7 +147,9 @@ export class PeriodValidator {
     if (employee.disciplinesSchedule.length > 0) {
       const isEmployeeAvailable = this.checkScheduleAvailability(
         employee.disciplinesSchedule as unknown as DisciplineScheduleDTO[],
-        disciplinesSchedule as unknown as DisciplineScheduleDTO[]
+        disciplinesSchedule.filter(
+          (schedule) => schedule.employeeGuid === employeeGuid
+        ) as unknown as DisciplineScheduleDTO[]
       );
 
       if (!isEmployeeAvailable) throw new AppError(ErrorMessages.MSGE16);

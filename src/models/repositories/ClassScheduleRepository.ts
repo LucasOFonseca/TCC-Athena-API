@@ -16,9 +16,9 @@ export class ClassScheduleRepository {
       where: {
         shiftGuid: data[0].shiftGuid,
         classNumber: data[0].classNumber,
-        OR: data.map(({ dayOfWeek }) => ({
-          dayOfWeek,
-        })),
+        dayOfWeek: {
+          in: data.map(({ dayOfWeek }) => dayOfWeek),
+        },
       },
     });
 
