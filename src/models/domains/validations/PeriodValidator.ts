@@ -31,7 +31,17 @@ export class PeriodValidator {
 
   async checkIfPeriodExists(classId: string, matrixModuleGuid: string) {
     const existingPeriod = await prismaClient.period.findFirst({
-      where: { classId, matrixModuleGuid },
+      where: {
+        classId,
+        matrixModuleGuid,
+        status: {
+          notIn: [
+            PeriodStatus.draft,
+            PeriodStatus.finished,
+            PeriodStatus.canceled,
+          ],
+        },
+      },
     });
 
     if (existingPeriod) throw new AppError(ErrorMessages.MSGE02);

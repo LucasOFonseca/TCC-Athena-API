@@ -377,6 +377,27 @@ export class StudentRepository implements IRepository {
   }
 
   async findStudentPeriodDetails(studentGuid: string, periodGuid: string) {
+    const periodCourse = await prismaClient.period.findFirst({
+      where: { guid: periodGuid },
+      select: {
+        matrixModule: {
+          select: {
+            Matrix: {
+              select: {
+                course: {
+                  select: {
+                    guid: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const courseGuid = periodCourse?.matrixModule?.Matrix?.course?.guid;
+
     const studentPeriod = await prismaClient.period.findFirst({
       where: {
         guid: periodGuid,
@@ -424,6 +445,15 @@ export class StudentRepository implements IRepository {
                         name: true,
                         attendanceLogs: {
                           where: {
+                            period: {
+                              matrixModule: {
+                                Matrix: {
+                                  course: {
+                                    guid: courseGuid,
+                                  },
+                                },
+                              },
+                            },
                             studentAbsences: {
                               some: {
                                 studentGuid,
@@ -432,6 +462,9 @@ export class StudentRepository implements IRepository {
                           },
                           select: {
                             studentAbsences: {
+                              where: {
+                                studentGuid,
+                              },
                               select: {
                                 totalAbsences: true,
                               },
@@ -441,6 +474,15 @@ export class StudentRepository implements IRepository {
                         studentGrades: {
                           where: {
                             studentGuid,
+                            period: {
+                              matrixModule: {
+                                Matrix: {
+                                  course: {
+                                    guid: courseGuid,
+                                  },
+                                },
+                              },
+                            },
                           },
                           select: {
                             period: {
@@ -657,6 +699,7 @@ export class StudentRepository implements IRepository {
                   },
                 },
                 Period: {
+                  where: { status: PeriodStatus.finished },
                   select: {
                     deadline: true,
                   },
@@ -678,7 +721,7 @@ export class StudentRepository implements IRepository {
       guid,
       name,
       enrollmentNumber: enrollments[0].enrollmentNumber,
-      finishDate: matrices[0].matrixModules[0].Period[0].deadline,
+      finishDate: matrices[0].matrixModules[0].Period[0]?.deadline,
       totalWorkload: matrices[0].matrixModules
         .flatMap(({ disciplines }) => disciplines)
         .reduce((a, b) => a + b.workload, 0),

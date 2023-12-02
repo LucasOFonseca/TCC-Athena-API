@@ -407,6 +407,17 @@ export class EmployeeRepository implements IRepository {
         where: { guid },
         include: {
           disciplinesSchedule: {
+            where: {
+              period: {
+                status: {
+                  in: [
+                    PeriodStatus.notStarted,
+                    PeriodStatus.openForEnrollment,
+                    PeriodStatus.inProgress,
+                  ],
+                },
+              },
+            },
             include: {
               schedules: true,
               Discipline: {
@@ -443,6 +454,11 @@ export class EmployeeRepository implements IRepository {
         select: {
           name: true,
           disciplinesSchedule: {
+            where: {
+              period: {
+                status: PeriodStatus.inProgress,
+              },
+            },
             select: {
               period: {
                 select: {
@@ -505,7 +521,9 @@ export class EmployeeRepository implements IRepository {
 
       const afternoonSchedules = educator.disciplinesSchedule.flatMap(
         (schedule) =>
-          schedule.schedules.some(({ shift }) => shift.shift === Shift.evening)
+          schedule.schedules.some(
+            ({ shift }) => shift.shift === Shift.afternoon
+          )
             ? {
                 ...schedule,
                 course: schedule.period.matrixModule.Matrix.course.name,
@@ -646,6 +664,13 @@ export class EmployeeRepository implements IRepository {
           select: {
             name: true,
             disciplines: {
+              where: {
+                disciplineSchedules: {
+                  some: {
+                    employeeGuid: guid,
+                  },
+                },
+              },
               select: {
                 guid: true,
                 name: true,
@@ -691,6 +716,13 @@ export class EmployeeRepository implements IRepository {
         matrixModule: {
           select: {
             disciplines: {
+              where: {
+                disciplineSchedules: {
+                  some: {
+                    employeeGuid,
+                  },
+                },
+              },
               select: {
                 guid: true,
                 name: true,

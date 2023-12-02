@@ -3,7 +3,6 @@ import {
   ensureAuthenticated,
   ensureEducator,
   ensureManager,
-  ensurePrincipal,
 } from '../middlewares';
 import { attendanceLogRoutes } from './attendanceLog.routes';
 import { authRoutes } from './auth.routes';
@@ -24,7 +23,7 @@ router.use('/course', ensureAuthenticated, ensureManager, courseRoutes);
 router.use('/classroom', ensureAuthenticated, ensureManager, classroomRoutes);
 router.use('/student', ensureAuthenticated, ensureManager, studentRoutes);
 router.use('/shift', ensureAuthenticated, ensureManager, shiftRoutes);
-router.use('/period', ensureAuthenticated, ensureManager, periodRoutes);
+router.use('/period', ensureAuthenticated, periodRoutes);
 router.use(
   '/class-schedule',
   ensureAuthenticated,
@@ -32,7 +31,7 @@ router.use(
   classScheduleRoutes
 );
 router.use('/employee', ensureAuthenticated, employeeRoutes);
-router.use('/matrix', ensureAuthenticated, ensurePrincipal, matrixRoutes);
+router.use('/matrix', ensureAuthenticated, ensureManager, matrixRoutes);
 router.use(
   '/attendance-log',
   ensureAuthenticated,
