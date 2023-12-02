@@ -93,7 +93,7 @@ export class PeriodRepository implements IRepository {
     shiftGuid,
     vacancies,
   }: CreatePeriodDTO) {
-    if (classId && matrixModuleGuid) {
+    if (classId && matrixModuleGuid && status !== PeriodStatus.draft) {
       await this.validator.checkIfPeriodExists(classId, matrixModuleGuid);
     }
 
@@ -101,9 +101,16 @@ export class PeriodRepository implements IRepository {
       throw new AppError(ErrorMessages.MSGE01);
     }
 
-    const disciplinesSchedule = this.createDisciplinesScheduleFromDTO(
-      disciplinesScheduleData
+    const schedulesToCreate = disciplinesScheduleData.filter(
+      (disciplineSchedule) => disciplineSchedule.schedules.length > 0
     );
+
+    let disciplinesSchedule: DisciplineSchedule[] | undefined;
+
+    if (schedulesToCreate.length > 0) {
+      disciplinesSchedule =
+        this.createDisciplinesScheduleFromDTO(schedulesToCreate);
+    }
 
     const period = new Period(
       matrixModuleGuid,
@@ -151,7 +158,7 @@ export class PeriodRepository implements IRepository {
     if (selectedMatrixModule.Matrix.status === GenericStatus.inactive)
       throw new AppError(ErrorMessages.MSGE16, 404);
 
-    if (disciplinesScheduleData) {
+    if (disciplinesSchedule) {
       await this.validator.validateDisciplinesSchedule(
         selectedMatrixModule.disciplines as unknown as DisciplineDTO[],
         disciplinesSchedule,
@@ -163,21 +170,27 @@ export class PeriodRepository implements IRepository {
       data: {
         status: status as PrismaPeriodStatus,
         classId: period.classId,
-        deadline: dayjs(period.deadline)
-          .set('hour', 0)
-          .set('minute', 0)
-          .set('second', 0)
-          .toISOString(),
-        enrollmentEndDate: dayjs(period.enrollmentEndDate)
-          .set('hour', 0)
-          .set('minute', 0)
-          .set('second', 0)
-          .toISOString(),
-        enrollmentStartDate: dayjs(period.enrollmentStartDate)
-          .set('hour', 0)
-          .set('minute', 0)
-          .set('second', 0)
-          .toISOString(),
+        deadline: period.deadline
+          ? dayjs(period.deadline)
+              .set('hour', 0)
+              .set('minute', 0)
+              .set('second', 0)
+              .toISOString()
+          : undefined,
+        enrollmentEndDate: period.enrollmentEndDate
+          ? dayjs(period.enrollmentEndDate)
+              .set('hour', 0)
+              .set('minute', 0)
+              .set('second', 0)
+              .toISOString()
+          : undefined,
+        enrollmentStartDate: period.enrollmentStartDate
+          ? dayjs(period.enrollmentStartDate)
+              .set('hour', 0)
+              .set('minute', 0)
+              .set('second', 0)
+              .toISOString()
+          : undefined,
         matrixModuleGuid: period.matrixModuleGuid,
         vacancies: period.vacancies,
         classroomGuid: period.classroomGuid,
@@ -297,6 +310,10 @@ export class PeriodRepository implements IRepository {
       'updatedAt',
     ]) as typeof foundPeriod;
 
+    const schedulesToCreate = data.disciplinesSchedule?.filter(
+      (disciplineSchedule) => disciplineSchedule.schedules.length > 0
+    );
+
     const disciplinesSchedule = this.createDisciplinesScheduleFromDTO(
       periodToUpdate.disciplinesSchedule.map((disciplineSchedule) => ({
         guid: disciplineSchedule.guid,
@@ -336,10 +353,9 @@ export class PeriodRepository implements IRepository {
       period.classroomGuid = data.classroomGuid;
     if (data.shiftGuid !== undefined) period.shiftGuid = data.shiftGuid;
     if (data.classId !== undefined) period.classId = data.classId;
-    if (data.disciplinesSchedule !== undefined)
-      period.disciplinesSchedule = this.createDisciplinesScheduleFromDTO(
-        data.disciplinesSchedule
-      );
+    if (schedulesToCreate !== undefined && schedulesToCreate.length > 0)
+      period.disciplinesSchedule =
+        this.createDisciplinesScheduleFromDTO(schedulesToCreate);
     if (data.status !== undefined) period.status = data.status;
 
     if (period.status !== PeriodStatus.canceled) period.validate();
@@ -354,6 +370,7 @@ export class PeriodRepository implements IRepository {
 
     if (
       period.status !== PeriodStatus.draft &&
+      period.status !== PeriodStatus.inProgress &&
       period.enrollmentStartDate !==
         periodToUpdate.enrollmentStartDate.toISOString() &&
       (dayjs(periodToUpdate.enrollmentStartDate).isBefore(new Date(), 'day') ||
@@ -364,6 +381,7 @@ export class PeriodRepository implements IRepository {
 
     if (
       period.status !== PeriodStatus.draft &&
+      period.status !== PeriodStatus.inProgress &&
       period.enrollmentEndDate !==
         periodToUpdate.enrollmentEndDate.toISOString() &&
       (dayjs(periodToUpdate.enrollmentEndDate).isBefore(new Date(), 'day') ||
@@ -390,13 +408,15 @@ export class PeriodRepository implements IRepository {
         await this.validator.checkShiftAvailability(period.shiftGuid);
       }
 
-      await this.validator.checkClassroomAvailability(
-        period.classroomGuid,
-        period.shiftGuid,
-        period.vacancies,
-        disciplinesSchedule,
-        periodToUpdate.guid
-      );
+      if (period.classroomGuid) {
+        await this.validator.checkClassroomAvailability(
+          period.classroomGuid,
+          period.shiftGuid,
+          period.vacancies,
+          disciplinesSchedule,
+          periodToUpdate.guid
+        );
+      }
     }
 
     if (
@@ -561,21 +581,27 @@ export class PeriodRepository implements IRepository {
       data: {
         status: period.status as PrismaPeriodStatus,
         classId: period.classId,
-        deadline: dayjs(period.deadline)
-          .set('hour', 0)
-          .set('minute', 0)
-          .set('second', 0)
-          .toISOString(),
-        enrollmentEndDate: dayjs(period.enrollmentEndDate)
-          .set('hour', 0)
-          .set('minute', 0)
-          .set('second', 0)
-          .toISOString(),
-        enrollmentStartDate: dayjs(period.enrollmentStartDate)
-          .set('hour', 0)
-          .set('minute', 0)
-          .set('second', 0)
-          .toISOString(),
+        deadline: period.deadline
+          ? dayjs(period.deadline)
+              .set('hour', 0)
+              .set('minute', 0)
+              .set('second', 0)
+              .toISOString()
+          : undefined,
+        enrollmentEndDate: period.enrollmentEndDate
+          ? dayjs(period.enrollmentEndDate)
+              .set('hour', 0)
+              .set('minute', 0)
+              .set('second', 0)
+              .toISOString()
+          : undefined,
+        enrollmentStartDate: period.enrollmentStartDate
+          ? dayjs(period.enrollmentStartDate)
+              .set('hour', 0)
+              .set('minute', 0)
+              .set('second', 0)
+              .toISOString()
+          : undefined,
         matrixModuleGuid: period.matrixModuleGuid,
         vacancies: period.vacancies,
         classroomGuid: period.classroomGuid,

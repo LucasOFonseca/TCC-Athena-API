@@ -14,7 +14,8 @@ export class Period {
     status: true,
   };
   private DRAFT_VALIDATION_PARTIAL_MARK: Partial = {
-    ...this.DEFAULT_VALIDATION_PARTIAL_MARK,
+    guid: true,
+    status: true,
     classId: true,
     classroomGuid: true,
     deadline: true,
