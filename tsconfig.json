@@ -1,16 +1,26 @@
 {
   "compilerOptions": {
-    "target": "es2016",
+    "target": "es2021",
+    "declaration": true,
+    "removeComments": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
+    "allowSyntheticDefaultImports": true,
     "module": "commonjs",
+    "sourceMap": true,
     "outDir": "./dist",
+    "baseUrl": "./",
+    "incremental": true,
+    "strictNullChecks": false,
+    "noImplicitAny": false,
+    "strictBindCallApply": false,
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "forceConsistentCasingInFileNames": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "noFallthroughCasesInSwitch": false
   },
   "resolveJsonModule": true,
-  "include": ["src"],
+  "include": ["src", "src legacy/swagger.ts", "src legacy/main.ts"],
   "exclude": ["node_modules", "dist"]
 }
