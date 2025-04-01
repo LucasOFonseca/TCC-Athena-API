@@ -46,43 +46,52 @@ async function createShifts() {
 
 async function createAdmin() {
   const admin = await prismaClient.employee.findUnique({
-    where: {
-      email: 'admin@admin',
-    },
+    where: { cpf: '00000000000' },
   });
 
-  if (!admin) {
-    const hashPassword = await bcrypt.hash(
-      'admin',
-      Number(process.env.BCRYPT_SALT)
-    );
+  const hashPassword = await bcrypt.hash(
+    'admin123',
+    Number(process.env.BCRYPT_SALT)
+  );
 
-    await prismaClient.employee.create({
+  if (admin) {
+    await prismaClient.employee.update({
+      where: { cpf: '00000000000' },
       data: {
         name: 'Admin',
-        cpf: '00000000000',
-        birthdate: new Date().toISOString(),
-        phoneNumber: '00000000000',
-        email: 'admin@admin',
+        email: 'admin@admin.com',
         password: hashPassword,
-        roles: {
-          create: {
-            role: EmployeeRole.principal,
-          },
-        },
-        address: {
-          create: {
-            street: 'Rua',
-            number: '123',
-            neighborhood: 'Bairro',
-            city: 'Cidade',
-            state: 'UF',
-            cep: '00000000',
-          },
-        },
       },
     });
+
+    return;
   }
+
+  await prismaClient.employee.create({
+    data: {
+      name: 'Admin',
+      cpf: '00000000000',
+      birthdate: new Date().toISOString(),
+      phoneNumber: '00000000000',
+      email: 'admin@admin.com',
+      password: hashPassword,
+      roles: {
+        create: {
+          role: EmployeeRole.principal,
+        },
+      },
+      address: {
+        create: {
+          street: 'Rua',
+          number: '123',
+          neighborhood: 'Bairro',
+          city: 'Cidade',
+          state: 'UF',
+          cep: '00000000',
+        },
+      },
+    },
+  });
 }
 
 async function seed() {
